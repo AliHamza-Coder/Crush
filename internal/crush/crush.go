@@ -16,6 +16,7 @@ import (
 	"github.com/AliHamza-Coder/crush/internal/analyse"
 	"github.com/AliHamza-Coder/crush/internal/backup"
 	"github.com/AliHamza-Coder/crush/internal/compress"
+	"github.com/AliHamza-Coder/crush/internal/favicon"
 	"github.com/AliHamza-Coder/crush/internal/fileutil"
 	"github.com/AliHamza-Coder/crush/internal/install"
 	"github.com/AliHamza-Coder/crush/internal/ui"
@@ -129,7 +130,46 @@ func parseFlags() Config {
 	_ = flag.Bool("help", false, "Help")
 
 	flag.Usage = printUsage
-	flag.Parse()
+
+	// Re-arrange args so flags come before positional args.
+	// Go's flag.Parse stops at the first non-flag arg, so
+	// "crush ./dir/ -f webp" would silently ignore -f.
+	var flagArgs, positional []string
+	for i := 1; i < len(os.Args); i++ {
+		a := os.Args[i]
+		// Handle --no-backup before flag.Parse (not a registered flag)
+		if a == "--no-backup" {
+			cfg.Backup = false
+			continue
+		}
+		if strings.HasPrefix(a, "-") {
+			flagArgs = append(flagArgs, a)
+			// Value-taking flags — grab the next arg if it's not a flag
+			needsVal := false
+			switch a {
+			case "-i", "--input", "-o", "--output", "-f", "--format",
+				"-q", "--quality", "-p", "--parallel", "-t", "--type",
+				"-b", "--backup", "--backup-dir":
+				needsVal = true
+			}
+			if needsVal && i+1 < len(os.Args) && !strings.HasPrefix(os.Args[i+1], "-") {
+				i++
+				flagArgs = append(flagArgs, os.Args[i])
+			}
+		} else {
+			positional = append(positional, a)
+		}
+	}
+
+	// Parse the re-ordered flags
+	flag.CommandLine.Init(os.Args[0], flag.ContinueOnError)
+	if err := flag.CommandLine.Parse(flagArgs); err != nil {
+		if err == flag.ErrHelp {
+			os.Exit(0)
+		}
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(2)
+	}
 
 	if cfg.Quality < 1 {
 		cfg.Quality = 1
@@ -140,17 +180,8 @@ func parseFlags() Config {
 	if cfg.Parallel < 1 {
 		cfg.Parallel = 1
 	}
-	if cfg.Format != "" && cfg.Filter == "all" {
-		cfg.Filter = fileutil.FormatToType(cfg.Format)
-	}
-	for _, a := range os.Args[1:] {
-		if a == "--no-backup" {
-			cfg.Backup = false
-			break
-		}
-	}
-	if flag.NArg() > 0 {
-		cfg.Input = flag.Arg(0)
+	if len(positional) > 0 {
+		cfg.Input = positional[0]
 	}
 
 	return cfg
@@ -222,6 +253,7 @@ func interactiveMode() int {
 			"Extract audio from video — e.g., mp4 → mp3",
 			"Select specific files by number",
 			"Change directory",
+			"Generate Favicon — 16×16 + 32×32 SVG from image",
 			"Quit",
 		}, "Choose Action (↑↓ to choose, Enter to confirm):")
 
@@ -243,6 +275,8 @@ func interactiveMode() int {
 			if d != "" {
 				dir = d
 			}
+		case "Generate Favicon — 16×16 + 32×32 SVG from image":
+			favicon.RunFaviconMenu(ffmpeg, files)
 		case "Quit", "":
 			fmt.Println("  Goodbye!")
 			return 0
@@ -651,8 +685,15 @@ func processFile(ffmpeg string, file fileutil.FileInfo, cfg Config, outputDir st
 			return compress.Image(ffmpeg, src, dst, c.Quality, c.Format, c.Lossless)
 		}
 	case fileutil.TypeVideo:
-		compressFn = func(ffmpeg, src, dst string, c Config) error {
-			return compress.Video(ffmpeg, src, dst, c.Quality, c.Format, c.Lossless)
+		// Route video→audio conversions (audio extraction) to compress.Audio
+		if fileutil.FormatToType(cfg.Format) == "audio" {
+			compressFn = func(ffmpeg, src, dst string, c Config) error {
+				return compress.Audio(ffmpeg, src, dst, c.Quality, c.Format, c.Lossless)
+			}
+		} else {
+			compressFn = func(ffmpeg, src, dst string, c Config) error {
+				return compress.Video(ffmpeg, src, dst, c.Quality, c.Format, c.Lossless)
+			}
 		}
 	case fileutil.TypeAudio:
 		compressFn = func(ffmpeg, src, dst string, c Config) error {
@@ -668,6 +709,9 @@ func processFile(ffmpeg string, file fileutil.FileInfo, cfg Config, outputDir st
 			os.Remove(tmpPath)
 			return err
 		}
+		// Windows: os.Rename fails with "Access is denied" if target exists.
+		// Remove it first, then rename.
+		os.Remove(outPath)
 		return os.Rename(tmpPath, outPath)
 	}
 	return compressFn(ffmpeg, file.Path, outPath, cfg)

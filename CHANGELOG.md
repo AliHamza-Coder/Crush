@@ -1,18 +1,36 @@
 # Changelog
 
-## v2.3.1 (2026-07-12)
+## v2.4.0 (2026-07-12)
 
 ### Added
-- **Quality presets**: Added `90` and `Custom` (enter any value 1-100) options to quality selection
-- **Export Audio from Video**: Rewritten with dedicated format picker (mp3, wav, flac, ogg, aac, opus, m4a, alac) — original video is preserved
+- **Favicon Generator** — interactive menu option to generate 16×16 and 32×32 SVG favicons from any image
+  - Uses ffmpeg to resize and embeds the result as base64 inline SVG
+  - Outputs `favicon_16x16.svg` and `favicon_32x32.svg` in the current directory
+- **CLI audio extraction** — `crush . -f mp3` now extracts audio from video files in CLI mode (previously only worked in interactive mode)
+  - Video→audio conversions auto-route to `compress.Audio` with correct codecs
+  - Original video is always preserved
 
 ### Fixed
-- **Audio extraction bug**: `flac` and `alac` formats silently used MP3 encoder in non-lossless mode — now use correct codecs
-- **Original video no longer deleted** when extracting audio (was deleting if backup was enabled)
-
-### Changed
-- **Extraction flow simplified**: Removed unnecessary backup prompt (video is kept, only audio file is created)
-- Added `Magenta` color constant for visual styling
+- **Flags after path silently ignored**: `crush ./dir/ -f webp -q 90` now works correctly
+  - Root cause: Go's `flag.Parse()` stops at the first non-flag argument
+  - Fix: `parseFlags()` re-arranges args so flags come before positional args
+- **Audio extraction from video blocked in CLI mode**: Unsupported format error when using `-f mp3` on video files
+  - `CanConvertTo` now permits video→audio conversions (audio extraction)
+  - Auto-filter from format (`cfg.Filter = FormatToType(cfg.Format)`) removed — lets `FilterByFormat` handle it
+  - `processFile` routes video files with audio target format to `compress.Audio`
+- **Missing `alac` support**: Added `"alac"` to `CanConvertTo` and `FormatToType` lists
+  - Video→alac and audio→alac conversions now work correctly in both interactive and CLI modes
+- **Error handling**: `flag.Parse` errors now properly reported (was silently ignored)
+  - Added `ContinueOnError` + error check → stderr output + exit code 2
+  - `flag.ErrHelp` exits cleanly without spurious error messages
+- **Windows `os.Rename` failure**: Added `os.Remove` before rename to fix "Access is denied" on Windows
+- **Video compression quality**: Lowered CRF values for significantly better quality
+  - New formula: `CRF = 10 + (100-quality)*35/100` (was `18 + (100-quality)*22/100`)
+  - q85 default now uses CRF 15 (was 21) — dramatically reduces blocky artifacts
+  - q75 now uses CRF 19 (was 23) — much cleaner output
+- **Audio re-encoding in video compression**: In-place video compression now uses `-c:a copy` to preserve original audio without re-encoding (was re-encoding to 128k AAC)
+- **Audio extraction duration truncation**: Added `-map a:0` for explicit audio stream selection — fixes "2 min video → 20 sec audio" issue
+- **Low audio bitrate in format conversion**: Increased from 128k to 192k AAC for clearer audio
 
 ## v2.3.0 (2026-07-12)
 

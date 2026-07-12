@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-const Version = "v2.3.1"
+const Version = "v2.4.0"
 
 var (
 	Reset   = "\033[0m"
@@ -110,13 +110,15 @@ func CanConvertTo(ft FileType, format string) bool {
 			return true
 		}
 	case TypeVideo:
+		// Video can convert to another video format OR extract audio to an audio format
 		switch f {
-		case "mp4", "webm", "avi", "mov", "mkv", "gif":
+		case "mp4", "webm", "avi", "mov", "mkv", "gif",
+			"mp3", "ogg", "wav", "flac", "aac", "opus", "m4a", "alac":
 			return true
 		}
 	case TypeAudio:
 		switch f {
-		case "mp3", "ogg", "wav", "flac", "aac", "opus", "m4a":
+		case "mp3", "ogg", "wav", "flac", "aac", "opus", "m4a", "alac":
 			return true
 		}
 	}
@@ -130,7 +132,7 @@ func FormatToType(format string) string {
 		return "image"
 	case "mp4", "webm", "avi", "mov", "mkv":
 		return "video"
-	case "mp3", "ogg", "wav", "flac", "aac", "opus", "m4a":
+	case "mp3", "ogg", "wav", "flac", "aac", "opus", "m4a", "alac":
 		return "audio"
 	}
 	return "all"

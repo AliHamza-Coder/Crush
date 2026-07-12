@@ -87,29 +87,58 @@ func Video(ffmpeg, input, output string, quality int, format string, lossless bo
 		target = strings.TrimPrefix(filepath.Ext(output), ".")
 	}
 
+	isConversion := format != ""
+
 	if lossless {
-		args = append(args, "-c:v", "libx264", "-crf", "0", "-preset", "fast", "-c:a", "aac", "-b:a", "320k", "-movflags", "+faststart")
-		args = append(args, "-y", output)
+		args = append(args, "-c:v", "libx264", "-crf", "0", "-preset", "fast")
+		if isConversion && target != "mp4" && target != "m4v" {
+			// Re-encode audio only when converting to a different container
+			args = append(args, "-c:a", "aac", "-b:a", "320k")
+		} else {
+			args = append(args, "-c:a", "copy")
+		}
+		args = append(args, "-movflags", "+faststart", "-y", output)
 		return RunFFmpeg(ffmpeg, args)
 	}
 
-	crf := 18 + (100-quality)*22/100
+	// CRF mapping: quality 100→10 (near-lossless), 85→15 (excellent), 75→19 (good), 50→27 (okay), 1→44 (small)
+	crf := 10 + (100-quality)*35/100
 
 	switch target {
 	case "mp4", "m4v":
-		args = append(args, "-c:v", "libx264", "-crf", strconv.Itoa(crf), "-preset", "fast",
-			"-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart")
+		args = append(args, "-c:v", "libx264", "-crf", strconv.Itoa(crf), "-preset", "fast")
+		if isConversion {
+			args = append(args, "-c:a", "aac", "-b:a", "192k")
+		} else {
+			args = append(args, "-c:a", "copy")
+		}
+		args = append(args, "-movflags", "+faststart")
 	case "webm":
-		args = append(args, "-c:v", "libvpx-vp9", "-crf", strconv.Itoa(crf), "-b:v", "0", "-c:a", "libopus")
+		args = append(args, "-c:v", "libvpx-vp9", "-crf", strconv.Itoa(crf), "-b:v", "0", "-c:a", "libopus", "-b:a", "128k")
 	case "avi":
 		args = append(args, "-c:v", "libx264", "-crf", strconv.Itoa(crf), "-preset", "fast")
+		if isConversion {
+			args = append(args, "-c:a", "aac", "-b:a", "192k")
+		} else {
+			args = append(args, "-c:a", "copy")
+		}
 	case "mov":
-		args = append(args, "-c:v", "libx264", "-crf", strconv.Itoa(crf), "-preset", "fast", "-c:a", "aac")
+		args = append(args, "-c:v", "libx264", "-crf", strconv.Itoa(crf), "-preset", "fast")
+		if isConversion {
+			args = append(args, "-c:a", "aac", "-b:a", "192k")
+		} else {
+			args = append(args, "-c:a", "copy")
+		}
 	case "gif":
 		args = append(args, "-vf", "fps=10,scale=320:-1:flags=lanczos")
 	default:
-		args = append(args, "-c:v", "libx264", "-crf", strconv.Itoa(crf), "-preset", "fast",
-			"-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart")
+		args = append(args, "-c:v", "libx264", "-crf", strconv.Itoa(crf), "-preset", "fast")
+		if isConversion {
+			args = append(args, "-c:a", "aac", "-b:a", "192k")
+		} else {
+			args = append(args, "-c:a", "copy")
+		}
+		args = append(args, "-movflags", "+faststart")
 	}
 
 	args = append(args, "-y", output)
@@ -125,6 +154,11 @@ func Audio(ffmpeg, input, output string, quality int, format string, lossless bo
 		target = strings.TrimPrefix(filepath.Ext(output), ".")
 	}
 
+	// Explicitly map first audio stream for reliable extraction from videos.
+	// -map a:0 selects only the first audio stream, ignoring video/subtitle streams.
+	// This also ensures the full audio duration is preserved even if input has gaps.
+	args = append(args, "-map", "a:0")
+
 	if lossless {
 		switch target {
 		case "flac":
@@ -135,7 +169,7 @@ func Audio(ffmpeg, input, output string, quality int, format string, lossless bo
 		default:
 			args = append(args, "-c:a", "flac", "-compression_level", "8")
 		}
-		args = append(args, "-vn", "-y", output)
+		args = append(args, "-y", output)
 		return RunFFmpeg(ffmpeg, args)
 	}
 
@@ -168,7 +202,7 @@ func Audio(ffmpeg, input, output string, quality int, format string, lossless bo
 		args = append(args, "-c:a", "libmp3lame", "-q:a", strconv.Itoa(q))
 	}
 
-	args = append(args, "-vn", "-y", output)
+	args = append(args, "-y", output)
 	return RunFFmpeg(ffmpeg, args)
 }
 
