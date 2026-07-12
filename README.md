@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://img.shields.io/badge/version-v2.3.1-22c55e?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-v2.4.0-22c55e?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/go-1.23-00ADD8?style=flat-square" alt="Go">
   <img src="https://img.shields.io/badge/license-MIT-22c55e?style=flat-square" alt="License">
   <br><br>
@@ -38,6 +38,7 @@ Download `crush.exe` from [releases](https://github.com/AliHamza-Coder/crush/rel
 | **Install** | `crush install` | Auto-install FFmpeg via winget/brew/apt |
 | **Analyse** | `crush analyse` | Show directory breakdown with bar charts |
 | **Analyse JSON** | `crush analyse --json` | Machine-readable output |
+| **Favicon** | `crush` → menu option | Generate 16×16 + 32×32 SVG favicons from images |
 
 ### Formats
 
@@ -47,6 +48,7 @@ Download `crush.exe` from [releases](https://github.com/AliHamza-Coder/crush/rel
 | **Video** | mp4, mov, avi, mkv, wmv, flv, webm, m4v, mpg, 3gp, ts | mp4, webm, avi, mov, gif |
 | **Audio** | mp3, wav, flac, ogg, aac, wma, m4a, opus, aiff, alac | mp3, ogg, wav, flac, aac, opus, m4a |
 | **Export from video** | mp4, mov, webm, avi, mkv + audio codec | **→** mp3, wav, flac, ogg, aac, opus, m4a, alac |
+| **Favicon** | png, jpg, webp, avif, ... | **→** 16×16 + 32×32 SVG |
 
 ---
 
@@ -81,12 +83,11 @@ crush analyse ./assets/
 ### Interactive mode walkthrough
 
 ```
-╔══════════════════════════════════════════════╗
-║                                             ║
-║     ✦ CRUSH v2.3.1                          ║
-║     Media Compressor                        ║
-║                                             ║
-╚══════════════════════════════════════════════╝
+┌─────────────────────────────────────────────────────┐
+│                                                     │
+│     ✦ CRUSH v2.4.0 — Lightning-fast media compressor │
+│                                                     │
+└─────────────────────────────────────────────────────┘
 
   ✦ Developed by Ali Hamza Coder ✦
 
@@ -114,24 +115,9 @@ crush analyse ./assets/
      Export Audio from Video — mp4, mov → mp3, wav, flac...
      Select specific files by number
      Change directory
+     Generate Favicon — 16×16 + 32×32 SVG from image  🆕
      Quit
 ```
-
-### Quality selection (with 90 + Custom presets)
-
-When compressing or extracting, you can choose:
-
-```
-  ▼ Quality (↑↓ to choose, Enter to confirm)
-     85  — balanced  ★ recommended
-     90  — high quality        🆕
-     75  — smaller file
-     100 — maximum quality
-     Lossless — original quality preserved
-     Custom — enter any value (1-100)  🆕
-```
-
-Custom lets you type any number from 1–100 (e.g. `92`, `67`, `45`).
 
 ---
 
@@ -280,30 +266,36 @@ crush/
 
 ---
 
-## ✦ v2.3.1 — Quality presets + Audio export
+## ✦ v2.4.0 Full Release Notes
 
-### New quality options
-- **90** — high quality option added to all media types
-- **Custom** — select and type any value (1–100) for fine-grained control
+See [CHANGELOG.md](CHANGELOG.md) for the complete history.
 
-### Improved Export Audio from Video
-- **8 formats**: mp3, wav, flac, ogg, aac, opus, m4a, alac — pick with descriptions
-- **Original video preserved** — only the audio file is created, never deleted
-- **Simplified flow** — no backup prompt needed for extraction
-- **Verified** — all 7 formats tested with real ffmpeg commands
+## ✦ v2.4.0 — What's New
 
-### v2.3.0 major change
+### 🆕 Favicon Generator
+Generate 16×16 and 32×32 SVG favicons from any image — right from the interactive menu. Uses ffmpeg to resize and embeds the result as base64 inline SVG.
 
-### `promptui` → `charmbracelet/huh`
+### 🎬 Dramatically Better Video Quality
+- **CRF 15 at default q85** (was CRF 21) — eliminates blocky artifacts
+- **`-c:a copy`** preserves original audio during in-place compression (no more re-encoding to 128k AAC)
+- **`-map a:0`** ensures full audio duration when extracting (no more truncated audio)
+- **192k AAC** for format conversions (was 128k) — noticeably clearer audio
 
-CRUSH v2.3.0 replaces the old `promptui` library with [`huh`](https://github.com/charmbracelet/huh) (built on Bubble Tea). This means:
+### 🔧 Bug Fixes
+- **Flags after path** — `crush ./dir/ -f webp -q 90` now works correctly
+- **Windows rename** — `os.Remove` before rename fixes "Access is denied"
+- **CLI audio extraction** — `crush . -f mp3` now works on video files
+- **`--help` cleanup** — exits cleanly without spurious error messages
+
+---
+
+### v2.3.0 — `promptui` → `charmbracelet/huh`
+
+CRUSH v2.3.0 replaces the old `promptui` library with [`huh`](https://github.com/charmbracelet/huh) (built on Bubble Tea):
 
 - ✅ **Arrow-key menus work on ALL terminals** — Windows cmd, PowerShell, Windows Terminal, Linux, macOS
 - ✅ **No more silent "Goodbye!"** — the old library failed silently on some Windows terminals
 - ✅ **Numbered fallback** — if the interactive menu fails for any reason, falls back to `1), 2), 3)...` number input
-- ✅ **Actively maintained** — `promptui` was unmaintained since 2021
-
-**Requires Go 1.23+** to build from source (pre-built binaries are still available for download).
 
 ---
 
@@ -319,14 +311,12 @@ CRUSH v2.3.0 replaces the old `promptui` library with [`huh`](https://github.com
 Create a release with any of these methods:
 
 ```powershell
-# 1. Tag and push
-git tag v2.3.1
-git push origin v2.3.1
+# Tag and push
+git tag v2.4.0
+git push origin v2.4.0
 
-# 2. GitHub CLI
-gh release create v2.3.1 ./crush.exe --title "v2.3.1" --notes "See CHANGELOG.md"
-
-# 3. GitHub web UI → Releases → Draft a new release
+# GitHub CLI
+gh release create v2.4.0 ./crush.exe --title "v2.4.0" --notes "See CHANGELOG.md"
 ```
 
 ---
