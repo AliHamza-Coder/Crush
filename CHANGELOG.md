@@ -1,5 +1,22 @@
 # Changelog
 
+## v2.2.5 (2026-07-12)
+
+### Added
+- **Arrow key selection for all prompts** — use ↑/↓ to choose mode, quality, backup, and format (previously only format used arrow keys)
+- New `SelectQuality` helper — pick quality from a curated list (Balanced, Smaller, Max, Lossless) with arrow keys instead of typing a number
+- **Safe in-place compression** — writes to `.crush_tmp` file first, then renames to target (prevents data corruption if interrupted)
+- Backup file auto-cleaned on failure — no wasted disk space from failed processing
+
+### Fixed
+- "★ recommended" label duplication bug in Windows arrow key menu
+- Backup copies no longer orphaned when compression fails
+
+### Changed
+- All interactive prompts now use arrow key selection (mode, quality, backup yes/no, format)
+- First list option now shows `(default)` label for clarity
+- Code quality improvements in `processFile` and `runProcess`
+
 ## v2.2.4 (2026-07-12)
 
 ### Fixed

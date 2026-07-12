@@ -151,3 +151,61 @@ func Pause() {
 func Beep() {
 	fmt.Print("\a")
 }
+
+func SelectQuality(filter string) (int, bool) {
+	PrintQualityTable(filter)
+
+	var items []string
+	switch filter {
+	case "all", "custom":
+		items = []string{
+			"85  — balanced (good quality, ~50-70% smaller)  ★ recommended",
+			"75  — smaller file, slightly lower quality",
+			"100 — maximum quality, largest file",
+			"Lossless — original quality preserved",
+		}
+	case "video":
+		items = []string{
+			"100 — CRF 18 (near-lossless, largest)",
+			"85  — CRF 23 (balanced, ~50% smaller)  ★ recommended",
+			"70  — CRF 28 (smaller, some quality loss)",
+			"Lossless — original quality, largest file",
+		}
+	case "audio":
+		items = []string{
+			"100 — VBR ~320kbps (maximum quality)",
+			"85  — VBR ~192kbps (excellent quality)  ★ recommended",
+			"60  — VBR ~128kbps (smaller, good for podcasts)",
+			"Lossless — original quality, largest file",
+		}
+	default:
+		items = []string{
+			"85  — balanced (good quality, ~50-70% smaller)  ★ recommended",
+			"75  — smaller file, slightly lower quality",
+			"100 — maximum quality, largest file",
+			"Lossless — original quality preserved",
+		}
+	}
+	fmt.Printf("\n")
+
+	choice := SelectFromList(items, "Quality (↑↓ to choose, Enter to confirm):")
+	if choice == "" {
+		return 85, false
+	}
+
+	switch {
+	case strings.Contains(choice, "Lossless"):
+		return 0, true
+	case strings.HasPrefix(choice, "100"):
+		return 100, false
+	case strings.HasPrefix(choice, "85"):
+		return 85, false
+	case strings.HasPrefix(choice, "75"):
+		return 75, false
+	case strings.HasPrefix(choice, "70"):
+		return 70, false
+	case strings.HasPrefix(choice, "60"):
+		return 60, false
+	}
+	return 85, false
+}

@@ -256,13 +256,11 @@ func pickMode(ffmpeg string, files []fileutil.FileInfo, filter string) {
 
 	ui.PrintSection("Choose Mode")
 	fmt.Printf("  %d file(s) selected\n\n", len(files))
-	fmt.Printf("  %s[C]%s Compress  — shrink file size, keep same format\n", fileutil.Bold, fileutil.Reset)
-	fmt.Printf("  %s[F]%s Convert   — change to another format (e.g., jpg → webp)\n\n", fileutil.Bold, fileutil.Reset)
 
-	mode := ui.ReadInput("Mode [C/F] (Enter = compress): ")
+	mode := ui.SelectFromList([]string{"Compress — shrink file size, keep same format", "Convert — change to another format (e.g., jpg → webp)"}, "Mode (↑↓ to choose, Enter to confirm):")
 
-	switch strings.ToUpper(mode) {
-	case "F":
+	switch mode {
+	case "Convert — change to another format (e.g., jpg → webp)":
 		convertMode(ffmpeg, files, filter)
 	default:
 		compressMode(ffmpeg, files, filter)
@@ -273,29 +271,10 @@ func pickMode(ffmpeg string, files []fileutil.FileInfo, filter string) {
 
 func compressMode(ffmpeg string, files []fileutil.FileInfo, filter string) {
 	ui.PrintSection("Compress Settings")
-	ui.PrintQualityTable(filter)
 
-	qStr := ui.ReadInput("  Quality 1-100 (Enter = lossless/best): ")
-	lossless := qStr == ""
-	quality := 85
-	if qStr != "" {
-		if q, err := strconv.Atoi(qStr); err == nil {
-			quality = q
-			if quality < 1 {
-				quality = 1
-			}
-			if quality > 100 {
-				quality = 100
-			}
-			lossless = false
-		}
-	}
-	if lossless {
-		ui.PrintOK("Lossless — original quality preserved")
-	}
+	quality, lossless := ui.SelectQuality(filter)
 
-	bStr := ui.ReadInput("  Backup originals? (Y/n): ")
-	backupEnabled := strings.ToLower(bStr) != "n"
+	backupEnabled := ui.SelectFromList([]string{"Yes — backup originals before processing", "No — skip backup"}, "Backup originals? (↑↓ to choose, Enter to confirm):") == "Yes — backup originals before processing"
 
 	bDir := ""
 	if backupEnabled {
@@ -327,28 +306,9 @@ func convertMode(ffmpeg string, files []fileutil.FileInfo, filter string) {
 		return
 	}
 
-	ui.PrintQualityTable(filter)
-	qStr := ui.ReadInput("  Quality 1-100 (Enter = lossless/conversion only): ")
-	lossless := qStr == ""
-	quality := 85
-	if qStr != "" {
-		if q, err := strconv.Atoi(qStr); err == nil {
-			quality = q
-			if quality < 1 {
-				quality = 1
-			}
-			if quality > 100 {
-				quality = 100
-			}
-			lossless = false
-		}
-	}
-	if lossless {
-		ui.PrintOK("Lossless conversion — no quality loss")
-	}
+	quality, lossless := ui.SelectQuality(filter)
 
-	bStr := ui.ReadInput("  Backup originals? (Y/n): ")
-	backupEnabled := strings.ToLower(bStr) != "n"
+	backupEnabled := ui.SelectFromList([]string{"Yes — backup originals before processing", "No — skip backup"}, "Backup originals? (↑↓ to choose, Enter to confirm):") == "Yes — backup originals before processing"
 
 	bDir := ""
 	if backupEnabled {
@@ -384,23 +344,9 @@ func pickExtract(ffmpeg string, files []fileutil.FileInfo, filter string) {
 		format = "mp3"
 	}
 
-	ui.PrintQualityTable("audio")
-	qStr := ui.ReadInput("  Quality 1-100 (Enter = best): ")
-	quality := 85
-	if qStr != "" {
-		if q, err := strconv.Atoi(qStr); err == nil {
-			quality = q
-			if quality < 1 {
-				quality = 1
-			}
-			if quality > 100 {
-				quality = 100
-			}
-		}
-	}
+	quality, _ := ui.SelectQuality("audio")
 
-	bStr := ui.ReadInput("  Backup originals? (Y/n): ")
-	backupEnabled := strings.ToLower(bStr) != "n"
+	backupEnabled := ui.SelectFromList([]string{"Yes — backup originals before processing", "No — skip backup"}, "Backup originals? (↑↓ to choose, Enter to confirm):") == "Yes — backup originals before processing"
 
 	bDir := ""
 	if backupEnabled {
@@ -456,6 +402,10 @@ func runExtractAudio(ffmpeg string, files []fileutil.FileInfo, format string, qu
 			mu.Lock()
 			ui.PrintProgress(idx+1, total)
 			if err != nil {
+				if backupEnabled {
+					dst := filepath.Join(backupTarget, file.Name)
+					os.Remove(dst)
+				}
 				ui.PrintFail(file.Name)
 				failed++
 			} else {
@@ -547,6 +497,10 @@ func runProcess(ffmpeg string, files []fileutil.FileInfo, format string, quality
 			mu.Lock()
 			ui.PrintProgress(idx+1, total)
 			if err != nil {
+				if backupEnabled {
+					dst := filepath.Join(backupTarget, file.Name)
+					os.Remove(dst)
+				}
 				ui.PrintFail(file.Name)
 				failed++
 			} else {
@@ -654,6 +608,10 @@ func directMode(cfg Config) int {
 			mu.Lock()
 			ui.PrintProgress(idx+1, total)
 			if err != nil {
+				if cfg.Backup {
+					dst := filepath.Join(backupDir, file.Name)
+					os.Remove(dst)
+				}
 				ui.PrintFail(file.Name)
 				failed++
 			} else {
@@ -694,15 +652,35 @@ func processFile(ffmpeg string, file fileutil.FileInfo, cfg Config, outputDir st
 	}
 	outPath := filepath.Join(outputDir, outName)
 
+	samePath := strings.EqualFold(filepath.Clean(outPath), filepath.Clean(file.Path))
+
+	var compressFn func(string, string, string, Config) error
 	switch file.Type {
 	case fileutil.TypeImage:
-		return compress.Image(ffmpeg, file.Path, outPath, cfg.Quality, cfg.Format, cfg.Lossless)
+		compressFn = func(ffmpeg, src, dst string, c Config) error {
+			return compress.Image(ffmpeg, src, dst, c.Quality, c.Format, c.Lossless)
+		}
 	case fileutil.TypeVideo:
-		return compress.Video(ffmpeg, file.Path, outPath, cfg.Quality, cfg.Format, cfg.Lossless)
+		compressFn = func(ffmpeg, src, dst string, c Config) error {
+			return compress.Video(ffmpeg, src, dst, c.Quality, c.Format, c.Lossless)
+		}
 	case fileutil.TypeAudio:
-		return compress.Audio(ffmpeg, file.Path, outPath, cfg.Quality, cfg.Format, cfg.Lossless)
+		compressFn = func(ffmpeg, src, dst string, c Config) error {
+			return compress.Audio(ffmpeg, src, dst, c.Quality, c.Format, c.Lossless)
+		}
+	default:
+		return fmt.Errorf("unsupported type")
 	}
-	return fmt.Errorf("unsupported type")
+
+	if samePath {
+		tmpPath := outPath + ".crush_tmp" + filepath.Ext(outPath)
+		if err := compressFn(ffmpeg, file.Path, tmpPath, cfg); err != nil {
+			os.Remove(tmpPath)
+			return err
+		}
+		return os.Rename(tmpPath, outPath)
+	}
+	return compressFn(ffmpeg, file.Path, outPath, cfg)
 }
 
 // ─── ANALYSE ─────────────────────────────────────────────────────

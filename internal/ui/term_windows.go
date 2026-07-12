@@ -84,12 +84,19 @@ func SelectFromList(items []string, prompt string) string {
 		moveUp(countLines(items) + 1)
 
 		for i, item := range items {
-			prefix := "  "
 			if i == selected {
-				prefix = fmt.Sprintf("  %s>%s ", fileutil.Green, fileutil.Reset)
-				fmt.Printf("%s%s%s  %s★ recommended%s\n", prefix, fileutil.Bold, item, fileutil.Dim, fileutil.Reset)
+				prefix := fmt.Sprintf("  %s>%s ", fileutil.Green, fileutil.Reset)
+				mark := ""
+				if i == 0 {
+					mark = fmt.Sprintf("  %s(default)%s", fileutil.Dim, fileutil.Reset)
+				}
+				fmt.Printf("%s%s%s%s\n", prefix, fileutil.Bold, item, mark)
 			} else {
-				fmt.Printf("%s %s\n", prefix, item)
+				mark := ""
+				if i == 0 {
+					mark = fmt.Sprintf("  %s(default)%s", fileutil.Dim, fileutil.Reset)
+				}
+				fmt.Printf("   %s%s\n", item, mark)
 			}
 		}
 
