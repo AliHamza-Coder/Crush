@@ -181,7 +181,7 @@ crush (no args)
        └─ Quit
 
 Each conversion:
-  1. Backup originals → backup/originals_<timestamp>/
+  1. Backup originals → backup_<timestamp>/
   2. Skip files already in target format
   3. Process N files in parallel
   4. Summary: ✓ OK | ✗ FAIL | ⏭ SKIP | ⏱ time
@@ -306,6 +306,9 @@ Generate 16×16 and 32×32 SVG favicons from any image — right from the intera
 - **Windows rename** — `os.Remove` before rename fixes "Access is denied"
 - **CLI audio extraction** — `crush . -f mp3` now works on video files
 - **`--help` cleanup** — exits cleanly without spurious error messages
+- **Lossless webm** — now uses libopus (was incompatible AAC)
+- **HTTP timeout** — update check no longer hangs on slow networks
+- **Bare paths** — `crush ./dir/` enters interactive mode (not direct)
 
 ---
 
