@@ -36,3 +36,6 @@ Thumbs.db
 
 # Backup folders created during runtime
 backup/
+
+# Temporary update/uninstall scripts
+_crush_*
