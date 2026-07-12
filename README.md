@@ -175,6 +175,7 @@ crush (no args)
        ├─ Videos     → prompt format/quality → parallel convert
        ├─ Audio      → prompt format/quality → parallel convert
        ├─ Export Audio → pick format (mp3/wav/flac/...) → quality → extract
+       ├─ Favicon    → pick image → generate 16×16 + 32×32 SVG
        ├─ Select     → parse "1-4,7,9-11" → prompt → convert
        ├─ Change dir → re-analyse
        └─ Quit
@@ -202,6 +203,7 @@ Each conversion:
 | Ctrl+C during batch | Finishes current files gracefully |
 | Duplicate filenames | Backup uses timestamp directories |
 | **Audio extraction** | Original video is always preserved |
+| **Favicon** — no images | Shows warning and returns to menu |
 
 ---
 
