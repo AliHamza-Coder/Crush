@@ -1,0 +1,3 @@
+module crush
+
+go 1.26.5
