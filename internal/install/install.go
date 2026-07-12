@@ -129,18 +129,11 @@ func Uninstall() {
 
 	ui.PrintStep("Deleting executable...")
 	if runtime.GOOS == "windows" {
-		batPath := filepath.Join(exeDir, "_crush_uninstall.bat")
-		batContent := fmt.Sprintf(`@echo off
-:loop
-del "%s" >nul 2>&1
-if exist "%s" (
-	timeout /t 1 /nobreak >nul
-	goto loop
-)
-del "%%~f0" >nul 2>&1
-`, exePath, exePath)
-		os.WriteFile(batPath, []byte(batContent), 0755)
-		exec.Command("cmd", "/c", "start", "/b", batPath).Start()
+		psCmd := fmt.Sprintf(
+			`Start-Sleep -Seconds 2; Remove-Item -LiteralPath '%s' -Force`,
+			exePath,
+		)
+		exec.Command("powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", psCmd).Start()
 
 		fmt.Printf("\n  %sCRUSH has been uninstalled.%s\n", fileutil.Green, fileutil.Reset)
 		fmt.Printf("  Close this terminal and open a new one for PATH changes.\n")

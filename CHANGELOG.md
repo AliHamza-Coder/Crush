@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.2.1 (2026-07-12)
+
+### Fixed
+- Uninstall now uses PowerShell instead of unreliable batch file — deletes correctly on Windows
+- Confirmed `crush -v` and `crush --version` work properly
+- Added `_crush_*` temp files to .gitignore
+
 ## v2.2.0 (2026-07-12)
 
 ### Added
