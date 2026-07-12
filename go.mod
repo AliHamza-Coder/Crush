@@ -1,3 +1,3 @@
-module crush
+module github.com/AliHamza-Coder/crush
 
-go 1.26.5
+go 1.21
