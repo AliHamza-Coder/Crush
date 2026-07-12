@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.2.6 (2026-07-12)
+
+### Fixed
+- **PowerShell installer download failure** — added TLS 1.2 and `-UseBasicParsing` to `Invoke-WebRequest` in `install.ps1`
+  - TLS 1.2 is required by GitHub but was not enabled by default on older Windows/PowerShell versions
+  - `-UseBasicParsing` suppresses the script-execution security warning
+
 ## v2.2.5 (2026-07-12)
 
 ### Added
