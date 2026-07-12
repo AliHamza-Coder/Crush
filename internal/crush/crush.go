@@ -486,7 +486,7 @@ func runProcess(ffmpeg string, files []fileutil.FileInfo, format string, quality
 	var backupTarget string
 	if backupEnabled {
 		backupTarget = backup.CreateDir(backupDir, ".")
-		ui.PrintOK(fmt.Sprintf("Originals backed up to: %s", backupTarget))
+		ui.PrintOK(fmt.Sprintf("Backup created at: %s", backupTarget))
 	}
 
 	var success, failed, skipped int64
@@ -516,7 +516,13 @@ func runProcess(ffmpeg string, files []fileutil.FileInfo, format string, quality
 			}
 
 			cfg := Config{Format: format, Quality: quality, Lossless: lossless}
-			err := processFile(ffmpeg, file, cfg, ".")
+			// Output dir: for compress (same format) go to file's own directory;
+			// for convert (different format) go to current directory.
+			outDir := filepath.Dir(file.Path)
+			if format != "" {
+				outDir = "."
+			}
+			err := processFile(ffmpeg, file, cfg, outDir)
 
 			mu.Lock()
 			ui.PrintProgress(idx+1, total)
@@ -527,18 +533,16 @@ func runProcess(ffmpeg string, files []fileutil.FileInfo, format string, quality
 				}
 				ui.PrintFail(fmt.Sprintf("%s — %v", file.Name, err))
 				failed++
+			} else if backupEnabled && format == "" {
+				// Compress in-place: original backed up, compressed file in same dir
+				ui.PrintOK(fmt.Sprintf("%s compressed ✓", file.Name))
+				success++
+			} else if backupEnabled && format != "" {
+				// Convert: original backed up (and deleted), new format in current dir
+				ui.PrintOK(fmt.Sprintf("%s → %s ✓", file.Name, fileutil.FileNameWithoutExt(file.Name)+"."+format))
+				success++
 			} else {
-				if backupEnabled && format == "" {
-					if rmErr := os.Remove(file.Path); rmErr == nil {
-						ui.PrintOK(fmt.Sprintf("%s compressed ✓", file.Name))
-					}
-				} else if backupEnabled && format != "" {
-					if rmErr := os.Remove(file.Path); rmErr == nil {
-						ui.PrintOK(fmt.Sprintf("%s → %s ✓", file.Name, fileutil.FileNameWithoutExt(file.Name)+"."+format))
-					}
-				} else {
-					ui.PrintOK(file.Name)
-				}
+				ui.PrintOK(file.Name)
 				success++
 			}
 			mu.Unlock()
@@ -553,7 +557,13 @@ func runProcess(ffmpeg string, files []fileutil.FileInfo, format string, quality
 		ui.PrintWarn(fmt.Sprintf("%d already in target format — skipped", skipped))
 	}
 	if backupEnabled {
-		ui.PrintOK(fmt.Sprintf("Originals: %s", backupTarget))
+		if success > 0 {
+			ui.PrintOK(fmt.Sprintf("Backup saved to: %s", backupTarget))
+		} else {
+			// All files failed — remove empty backup dir
+			os.RemoveAll(backupTarget)
+			ui.PrintWarn("All files failed — backup directory removed")
+		}
 	}
 	ui.Pause()
 }
@@ -585,12 +595,9 @@ func directMode(cfg Config) int {
 		ui.PrintOK(fmt.Sprintf("Backup -> %s", backupDir))
 	}
 
-	outputDir := cfg.OutputDir
-	if outputDir == "" {
-		outputDir = "."
-	}
-	if outputDir != "." {
-		os.MkdirAll(outputDir, 0755)
+	// Create custom output directory if specified by user
+	if cfg.OutputDir != "" {
+		os.MkdirAll(cfg.OutputDir, 0755)
 	}
 
 	start := time.Now()
@@ -620,6 +627,17 @@ func directMode(cfg Config) int {
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
+			// Output dir: for compress (same format) go to file's directory;
+			// for convert (different format) go to current dir (or user-specified -o).
+			outDir := cfg.OutputDir
+			if outDir == "" {
+				if cfg.Format == "" {
+					outDir = filepath.Dir(file.Path)
+				} else {
+					outDir = "."
+				}
+			}
+
 			if cfg.Backup {
 				dst := filepath.Join(backupDir, file.Name)
 				if err := backup.CopyFile(file.Path, dst); err != nil {
@@ -627,7 +645,7 @@ func directMode(cfg Config) int {
 				}
 			}
 
-			err := processFile(ffmpeg, file, cfg, outputDir)
+			err := processFile(ffmpeg, file, cfg, outDir)
 
 			mu.Lock()
 			ui.PrintProgress(idx+1, total)
@@ -639,9 +657,6 @@ func directMode(cfg Config) int {
 				ui.PrintFail(fmt.Sprintf("%s — %v", file.Name, err))
 				failed++
 			} else {
-				if cfg.Backup {
-					os.Remove(file.Path)
-				}
 				ui.PrintOK(file.Name)
 				success++
 			}
@@ -660,6 +675,11 @@ func directMode(cfg Config) int {
 	}
 	if cfg.DryRun {
 		ui.PrintWarn("Dry run — no files modified")
+	} else if cfg.Backup && success > 0 {
+		ui.PrintOK(fmt.Sprintf("Backup saved to: %s", backupDir))
+	} else if cfg.Backup && success == 0 {
+		os.RemoveAll(backupDir)
+		ui.PrintWarn("All files failed — backup directory removed")
 	}
 
 	return 0
