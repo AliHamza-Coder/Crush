@@ -13,20 +13,25 @@ func Directory(dir string) ([]fileutil.FileInfo, *fileutil.AnalyseStats) {
 	stats := &fileutil.AnalyseStats{Dir: dir, Formats: make(map[string]int)}
 	var files []fileutil.FileInfo
 
-	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: cannot read directory %s: %s\n", dir, err)
+		return files, stats
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		info, err := entry.Info()
 		if err != nil {
-			return nil
+			continue
 		}
-		if info.IsDir() {
-			if strings.HasPrefix(info.Name(), "backup") || strings.HasPrefix(info.Name(), "originals_") {
-				return filepath.SkipDir
-			}
-			return nil
-		}
+		path := filepath.Join(dir, entry.Name())
 		ext := strings.ToLower(filepath.Ext(path))
 		ft := fileutil.DetectType(ext)
 		if ft == fileutil.TypeUnknown {
-			return nil
+			continue
 		}
 
 		stats.Total++
@@ -50,9 +55,6 @@ func Directory(dir string) ([]fileutil.FileInfo, *fileutil.AnalyseStats) {
 			Size: info.Size(), SizeStr: fileutil.FormatSize(info.Size()),
 			Type: ft, TypeName: fileutil.FormatDisplayName(ext),
 		})
-		return nil
-	}); err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: cannot read directory %s: %s\n", dir, err)
 	}
 
 	fileutil.SortFiles(files)

@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.2.3 (2026-07-12)
+
+### Added
+- **Arrow key selection** on Windows — use ↑/↓ to navigate format list, Enter to confirm
+- Non-Windows still uses number selection as fallback
+
+### Changed
+- **Analyse now scans current dir only** — no longer recurses into subdirectories
+- Subdirectory support planned for a future release
+
 ## v2.2.2 (2026-07-12)
 
 ### Fixed

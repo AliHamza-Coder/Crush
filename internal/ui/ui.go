@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -89,37 +88,7 @@ func PrintFormatMenu(filter string) string {
 	if !ok {
 		formats = FormatChoices["image"]
 	}
-	fmt.Printf("\n")
-	fmt.Printf("  %sSelect target format:%s\n", fileutil.Bold, fileutil.Reset)
-	for i, f := range formats {
-		fmt.Printf("  %s[%d]%s %s", fileutil.Bold, i+1, fileutil.Reset, f)
-		if i == 0 {
-			fmt.Printf("  %s★ recommended%s", fileutil.Dim, fileutil.Reset)
-		}
-		fmt.Printf("\n")
-	}
-	fmt.Printf("\n")
-	return uiReadFormat(formats)
-}
-
-func uiReadFormat(formats []string) string {
-	for {
-		input := ReadInput("  Format number (or type name): ")
-		if input == "" {
-			return ""
-		}
-		if n, err := strconv.Atoi(input); err == nil && n >= 1 && n <= len(formats) {
-			return formats[n-1]
-		}
-		input = strings.ToLower(strings.TrimSpace(input))
-		for _, f := range formats {
-			if f == input {
-				return input
-			}
-		}
-		Beep()
-		fmt.Printf("  %sInvalid choice. Enter a number 1-%d or format name.%s\n", fileutil.Red, len(formats), fileutil.Reset)
-	}
+	return SelectFromList(formats, "Target format (↑↓ to choose, Enter to confirm):")
 }
 
 func PrintResultSummary(success, failed, skipped int64, elapsed time.Duration) {
