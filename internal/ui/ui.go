@@ -46,17 +46,6 @@ func PrintSection(title string) {
 	fmt.Printf("  %s%s%s\n", fileutil.Dim, strings.Repeat("─", len(title)), fileutil.Reset)
 }
 
-func PrintInteractiveMenu() {
-	fmt.Printf("\n  %s[A]%s ALL files  — images + videos + audio\n", fileutil.Bold, fileutil.Reset)
-	fmt.Printf("  %s[I]%s Images    — jpg, png, webp, avif, gif...\n", fileutil.Bold, fileutil.Reset)
-	fmt.Printf("  %s[V]%s Videos    — mp4, mov, webm, avi, mkv...\n", fileutil.Bold, fileutil.Reset)
-	fmt.Printf("  %s[O]%s Audio     — mp3, wav, flac, ogg, aac...\n", fileutil.Bold, fileutil.Reset)
-	fmt.Printf("  %s[X]%s Extract audio from video  — e.g., mp4 → mp3\n", fileutil.Bold, fileutil.Reset)
-	fmt.Printf("  %s[S]%s Select specific files by number\n", fileutil.Bold, fileutil.Reset)
-	fmt.Printf("  %s[D]%s Change directory\n", fileutil.Bold, fileutil.Reset)
-	fmt.Printf("  %s[Q]%s Quit\n", fileutil.Bold, fileutil.Reset)
-}
-
 func PrintQualityTable(filter string) {
 	fmt.Printf("\n")
 	fmt.Printf("  %sRecommended quality values:%s\n", fileutil.Bold, fileutil.Reset)

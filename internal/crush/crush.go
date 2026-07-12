@@ -214,33 +214,38 @@ func interactiveMode() int {
 			continue
 		}
 
-		ui.PrintInteractiveMenu()
-		choice := ui.ReadInput("Choice [A/I/V/O/X/S/D/Q]: ")
+		choice := ui.SelectFromList([]string{
+			"ALL files  — images + videos + audio",
+			"Images     — jpg, png, webp, avif, gif...",
+			"Videos     — mp4, mov, webm, avi, mkv...",
+			"Audio      — mp3, wav, flac, ogg, aac...",
+			"Extract audio from video — e.g., mp4 → mp3",
+			"Select specific files by number",
+			"Change directory",
+			"Quit",
+		}, "Choose Action (↑↓ to choose, Enter to confirm):")
 
-		switch strings.ToUpper(choice) {
-		case "A":
+		switch choice {
+		case "ALL files  — images + videos + audio":
 			pickMode(ffmpeg, fileutil.FilterByType(files, "all"), "all")
-		case "I":
+		case "Images     — jpg, png, webp, avif, gif...":
 			pickMode(ffmpeg, fileutil.FilterByType(files, "image"), "image")
-		case "V":
+		case "Videos     — mp4, mov, webm, avi, mkv...":
 			pickMode(ffmpeg, fileutil.FilterByType(files, "video"), "video")
-		case "O":
+		case "Audio      — mp3, wav, flac, ogg, aac...":
 			pickMode(ffmpeg, fileutil.FilterByType(files, "audio"), "audio")
-		case "X":
+		case "Extract audio from video — e.g., mp4 → mp3":
 			pickExtract(ffmpeg, fileutil.FilterByType(files, "video"), "video")
-		case "S":
+		case "Select specific files by number":
 			selectSpecific(ffmpeg, files)
-		case "D":
-			d := ui.ReadInput("Enter directory: ")
+		case "Change directory":
+			d := ui.ReadInput("  Enter directory: ")
 			if d != "" {
 				dir = d
 			}
-		case "Q":
+		case "Quit", "":
 			fmt.Println("  Goodbye!")
 			return 0
-		default:
-			ui.Beep()
-			ui.Pause()
 		}
 	}
 }
