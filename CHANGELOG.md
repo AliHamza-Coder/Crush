@@ -1,5 +1,20 @@
 # Changelog
 
+## v2.1.0 (2026-07-12)
+
+### Added
+- `crush update` — auto-download and install newer versions from GitHub
+- `crush uninstall` — cleanly remove CRUSH (PATH + executable)
+- Format hints in interactive menu (shows supported extensions per type)
+- Simpler conversion prompts with examples for target format
+
+### Changed
+- Clearer menu layout with extension examples
+- Smoother setup prompts: Enter = default, n/N = skip
+
+### Fixed
+- Version bumped to v2.1.0
+
 ## v2.0.0 (2026-07-12)
 
 ### Added

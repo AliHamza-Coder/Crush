@@ -47,10 +47,10 @@ func PrintSection(title string) {
 }
 
 func PrintInteractiveMenu() {
-	fmt.Printf("\n  %s[A]%s Convert ALL files\n", fileutil.Bold, fileutil.Reset)
-	fmt.Printf("  %s[I]%s Convert Images only\n", fileutil.Bold, fileutil.Reset)
-	fmt.Printf("  %s[V]%s Convert Videos only\n", fileutil.Bold, fileutil.Reset)
-	fmt.Printf("  %s[O]%s Convert Audio only\n", fileutil.Bold, fileutil.Reset)
+	fmt.Printf("\n  %s[A]%s ALL files  — images + videos + audio\n", fileutil.Bold, fileutil.Reset)
+	fmt.Printf("  %s[I]%s Images    — jpg, png, webp, avif, gif...\n", fileutil.Bold, fileutil.Reset)
+	fmt.Printf("  %s[V]%s Videos    — mp4, mov, webm, avi, mkv...\n", fileutil.Bold, fileutil.Reset)
+	fmt.Printf("  %s[O]%s Audio     — mp3, wav, flac, ogg, aac...\n", fileutil.Bold, fileutil.Reset)
 	fmt.Printf("  %s[S]%s Select specific files by number\n", fileutil.Bold, fileutil.Reset)
 	fmt.Printf("  %s[D]%s Change directory\n", fileutil.Bold, fileutil.Reset)
 	fmt.Printf("  %s[Q]%s Quit\n", fileutil.Bold, fileutil.Reset)
