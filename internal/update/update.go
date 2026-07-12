@@ -154,11 +154,14 @@ func replaceSelf(exePath, tmpPath string) error {
 
 	if runtime.GOOS == "windows" {
 		batPath := filepath.Join(filepath.Dir(exePath), "_crush_update.bat")
+		oldPath := exePath + ".old"
 		batContent := fmt.Sprintf(`@echo off
 timeout /t 1 /nobreak >nul
+ren "%s" "crush.exe.old" >nul 2>&1
 move /y "%s" "%s" >nul 2>&1
+del "%s" >nul 2>&1
 del "%%~f0" >nul 2>&1
-`, tmpPath, exePath)
+`, exePath, tmpPath, exePath, oldPath)
 		if err := os.WriteFile(batPath, []byte(batContent), 0755); err != nil {
 			os.Remove(tmpPath)
 			return fmt.Errorf("cannot create update script: %s", err)

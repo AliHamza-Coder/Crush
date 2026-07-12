@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.2.4 (2026-07-12)
+
+### Fixed
+- **Update now works** — batch file renames old exe before moving new one (Windows blocks overwriting a running executable)
+- Previously `crush update` downloaded the new version but couldn't replace the running exe
+
 ## v2.2.3 (2026-07-12)
 
 ### Added
