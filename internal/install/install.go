@@ -39,9 +39,7 @@ func Run() {
 			pkgCmd = "sudo apt install ffmpeg"
 		}
 
-		fmt.Printf("\n  Install via %s? [Y/n]: ", pkgName)
-		var resp string
-		fmt.Scanln(&resp)
+		resp := ui.ReadInput(fmt.Sprintf("\n  Install via %s? [Y/n]: ", pkgName))
 		if strings.ToLower(strings.TrimSpace(resp)) != "n" {
 			ui.PrintStep(fmt.Sprintf("Running: %s", pkgCmd))
 			parts := strings.Fields(pkgCmd)

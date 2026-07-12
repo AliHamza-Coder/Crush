@@ -26,7 +26,7 @@ func PrintBanner() {
 		"",
 		fmt.Sprintf("  %s╔══════════════════════════════════════════════╗%s", fileutil.Cyan, fileutil.Reset),
 		fmt.Sprintf("  %s║                                             ║%s", fileutil.Cyan, fileutil.Reset),
-		fmt.Sprintf("  %s║     %s✦ CRUSH %s%s%s%s%s", fileutil.Cyan, fileutil.Bold, fileutil.Reset, fileutil.Green, fileutil.Version, fileutil.Reset, strings.Repeat(" ", 32-len(fileutil.Version))),
+		fmt.Sprintf("  %s║     %s✦ CRUSH %s%s%s%[1]s║%s", fileutil.Cyan, fileutil.Bold, fileutil.Reset, fileutil.Green, fileutil.Version, strings.Repeat(" ", 32-len(fileutil.Version))),
 		fmt.Sprintf("  %s║     %sMedia Compressor%s                     ║%s", fileutil.Cyan, fileutil.Dim, fileutil.Reset, fileutil.Reset),
 		fmt.Sprintf("  %s║                                             ║%s", fileutil.Cyan, fileutil.Reset),
 		fmt.Sprintf("  %s╚══════════════════════════════════════════════╝%s", fileutil.Cyan, fileutil.Reset),

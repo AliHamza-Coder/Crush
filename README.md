@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="https://img.shields.io/badge/version-v2.0.0-22c55e?style=flat-square" alt="Version">
-  <img src="https://img.shields.io/badge/go-1.21-00ADD8?style=flat-square" alt="Go">
+  <img src="https://img.shields.io/badge/version-v2.3.0-22c55e?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/go-1.23-00ADD8?style=flat-square" alt="Go">
   <img src="https://img.shields.io/badge/license-MIT-22c55e?style=flat-square" alt="License">
   <br><br>
   <h1>✦ CRUSH ✦</h1>
@@ -33,7 +33,7 @@ Download `crush.exe` from [releases](https://github.com/AliHamza-Coder/crush/rel
 
 | Mode | Command | Description |
 |------|---------|-------------|
-| **Interactive** | `crush` | Analyse directory + menu-driven conversion |
+| **Interactive** | `crush` | Analyse directory + arrow-key menu-driven conversion |
 | **Direct CLI** | `crush -f webp -q 90` | One command, no prompts |
 | **Install** | `crush install` | Auto-install FFmpeg via winget/brew/apt |
 | **Analyse** | `crush analyse` | Show directory breakdown with bar charts |
@@ -52,7 +52,7 @@ Download `crush.exe` from [releases](https://github.com/AliHamza-Coder/crush/rel
 ## ✦ Quick start
 
 ```powershell
-# Interactive mode — analyse + menu
+# Interactive mode — analyse + arrow-key menu
 crush
 
 # Convert everything in current dir to WebP
@@ -81,8 +81,10 @@ crush analyse ./assets/
 
 ```
 ╔══════════════════════════════════════════════╗
-║     ✦ CRUSH v2.0.0                           ║
-║     Media Compressor                         ║
+║                                             ║
+║     ✦ CRUSH v2.3.0                          ║
+║     Media Compressor                        ║
+║                                             ║
 ╚══════════════════════════════════════════════╝
 
   ✦ Developed by Ali Hamza Coder ✦
@@ -103,13 +105,15 @@ crush analyse ./assets/
   4    MP4       45.2 MB    MP4      intro.mp4
   ...
 
-  [A] Convert ALL files
-  [I] Convert Images only
-  [V] Convert Videos only
-  [O] Convert Audio only
-  [S] Select specific files by number
-  [D] Change directory
-  [Q] Quit
+  ▼ Choose Action (↑↓ to choose, Enter to confirm)
+     ALL files  — images + videos + audio
+     Images     — jpg, png, webp, avif, gif...
+     Videos     — mp4, mov, webm, avi, mkv...
+     Audio      — mp3, wav, flac, ogg, aac...
+     Extract audio from video — e.g., mp4 → mp3
+     Select specific files by number
+     Change directory
+     Quit
 ```
 
 ---
@@ -146,13 +150,15 @@ crush (no args)
   │
   ├─ analyse ./ → bar chart + numbered file list
   │
-  └─ interactive menu
-       ├─ [A] All     → prompt format/quality → parallel convert
-       ├─ [I] Images  → prompt format/quality → parallel convert
-       ├─ [V] Videos  → prompt format/quality → parallel convert
-       ├─ [O] Audio   → prompt format/quality → parallel convert
-       ├─ [S] Select  → parse "1-4,7,9-11" → prompt → convert
-       └─ [D] Change dir → re-analyse
+  └─ interactive menu (arrow keys or numbered fallback)
+       ├─ All       → prompt format/quality → parallel convert
+       ├─ Images    → prompt format/quality → parallel convert
+       ├─ Videos    → prompt format/quality → parallel convert
+       ├─ Audio     → prompt format/quality → parallel convert
+       ├─ Extract   → extract audio from video (mp4 → mp3 etc.)
+       ├─ Select    → parse "1-4,7,9-11" → prompt → convert
+       ├─ Change dir → re-analyse
+       └─ Quit
 
 Each conversion:
   1. Backup originals → backup/originals_<timestamp>/
@@ -160,38 +166,6 @@ Each conversion:
   3. Process N files in parallel
   4. Summary: ✓ OK | ✗ FAIL | ⏭ SKIP | ⏱ time
 ```
-
----
-
-## ✦ Quality reference
-
-### Video (CRF — lower = better)
-
-| `-q` | CRF | Use case |
-|------|-----|----------|
-| 100  | 18  | Archival / near-lossless |
-| 85   | 21  | Web — high quality |
-| 70   | 25  | Web — balanced |
-| 50   | 29  | Storage saving |
-| 30   | 33  | Maximum compression |
-
-### Image
-
-| `-q` | JPEG q:v | WebP quality | Use case |
-|------|----------|--------------|----------|
-| 100  | 1        | 100          | Lossless |
-| 90   | 4        | 90           | Web — high |
-| 80   | 7        | 80           | Web — good |
-| 60   | 13       | 60           | Thumbnails |
-
-### Audio
-
-| `-q` | MP3 VBR | AAC | Use case |
-|------|---------|-----|----------|
-| 100  | V0 (245k) | 320k | Archival |
-| 85   | V2 (190k) | 256k | Music |
-| 70   | V4 (160k) | 192k | Podcast |
-| 50   | V6 (130k) | 128k | Speech |
 
 ---
 
@@ -205,6 +179,7 @@ Each conversion:
 | Invalid range (`abc`) | Error with re-prompt |
 | Reversed range (`5-1`) | Treated as `1-5` |
 | Quality out of range | Clamped to 1-100 |
+| Non-interactive terminal | Falls back to numbered menu instead of arrow keys |
 | Ctrl+C during batch | Finishes current files gracefully |
 | Duplicate filenames | Backup uses timestamp directories |
 
@@ -233,6 +208,7 @@ crush install
 ### Build from source
 
 ```powershell
+# Requires Go 1.23+
 git clone https://github.com/AliHamza-Coder/crush.git
 cd crush
 go build -o crush.exe ./cmd/crush/
@@ -241,7 +217,7 @@ go build -o crush.exe ./cmd/crush/
 ### Linux / macOS
 
 ```bash
-# Build from source
+# Requires Go 1.23+
 git clone https://github.com/AliHamza-Coder/crush.git
 cd crush
 go build -o crush ./cmd/crush/
@@ -268,11 +244,12 @@ crush/
 │   ├── compress/
 │   │   └── compress.go          # Image/video/audio encoding
 │   ├── backup/
-│   │   └── backup.go            # Backup creation
+│   │   └── backup.go            # Backup creation (missing in v2.2.6, added v2.3.0)
 │   ├── install/
 │   │   └── install.go           # Install subcommand
 │   ├── ui/
-│   │   └── ui.go                # Colours, banners, helpers
+│   │   ├── ui.go                # Colours, banners, helpers
+│   │   └── term.go             # Arrow-key + fallback menus (huh)
 │   └── fileutil/
 │       └── fileutil.go          # Types, enums, file utils
 ├── scripts/
@@ -282,6 +259,21 @@ crush/
 ├── CHANGELOG.md
 └── .gitignore
 ```
+
+---
+
+## ✦ v2.3.0 major change
+
+### `promptui` → `charmbracelet/huh`
+
+CRUSH v2.3.0 replaces the old `promptui` library with [`huh`](https://github.com/charmbracelet/huh) (built on Bubble Tea). This means:
+
+- ✅ **Arrow-key menus work on ALL terminals** — Windows cmd, PowerShell, Windows Terminal, Linux, macOS
+- ✅ **No more silent "Goodbye!"** — the old library failed silently on some Windows terminals
+- ✅ **Numbered fallback** — if the interactive menu fails for any reason, falls back to `1), 2), 3)...` number input
+- ✅ **Actively maintained** — `promptui` was unmaintained since 2021
+
+**Requires Go 1.23+** to build from source (pre-built binaries are still available for download).
 
 ---
 
@@ -298,11 +290,11 @@ Create a release with any of these methods:
 
 ```powershell
 # 1. Tag and push
-git tag v2.0.0
-git push origin v2.0.0
+git tag v2.3.0
+git push origin v2.3.0
 
 # 2. GitHub CLI
-gh release create v2.0.0 ./crush.exe --title "v2.0.0" --notes "See CHANGELOG.md"
+gh release create v2.3.0 ./crush.exe --title "v2.3.0" --notes "See CHANGELOG.md"
 
 # 3. GitHub web UI → Releases → Draft a new release
 ```

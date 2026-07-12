@@ -1,5 +1,19 @@
 # Changelog
 
+## v2.3.0 (2026-07-12)
+
+### Changed
+- **Replaced `promptui` with `charmbracelet/huh`** — arrow-key menus now work on all terminals (Windows cmd/PowerShell, macOS, Linux), no more silent "Goodbye!" exit on unsupported terminals
+- **Go 1.21 → 1.23** required by `huh` dependency
+
+### Added
+- **Numbered fallback menu** — if the interactive menu fails (non-interactive terminal, CI, etc.), automatically falls back to a simple `1), 2), 3)...` number pick
+- **`internal/backup` package** — backup directory creation and file copying (was missing from source tree)
+
+### Fixed
+- **Banner version line missing closing `║` border** — fixed visual artifact in the CRUSH title banner
+- **`install.go` uses `ui.ReadInput`** instead of raw `fmt.Scanln` for consistency
+
 ## v2.2.6 (2026-07-12)
 
 ### Fixed

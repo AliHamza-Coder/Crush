@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-const Version = "v2.2.6"
+const Version = "v2.3.0"
 
 var (
 	Reset  = "\033[0m"
