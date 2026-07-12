@@ -28,7 +28,9 @@ Write-Host ""
 
 try {
     Write-Host "Downloading CRUSH..." -NoNewline
-    Invoke-WebRequest -Uri $url -OutFile $exePath -ErrorAction Stop
+    # Force TLS 1.2 — required by GitHub on older PowerShell
+    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+    Invoke-WebRequest -Uri $url -OutFile $exePath -UseBasicParsing -ErrorAction Stop
     Write-Host " ✓" -ForegroundColor Green
 } catch {
     Write-Host " ✗ Failed: $_" -ForegroundColor Red
