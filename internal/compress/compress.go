@@ -38,7 +38,12 @@ func Image(ffmpeg, input, output string, quality int, format string, lossless bo
 			args = append(args, "-c:v", "libaom-av1", "-crf", strconv.Itoa(crf), "-b:v", "0", "-strict", "experimental")
 		}
 	case "png":
-		args = append(args, "-compression_level", "9")
+		// Use explicit png codec; map quality (0‑100) to compression level 0‑9 (higher = more compression)
+		level := 9 - (quality / 11) // roughly 0‑9 range
+		if level < 0 {
+			level = 0
+		}
+		args = append(args, "-c:v", "png", "-compression_level", strconv.Itoa(level))
 	case "gif":
 		args = append(args, "-vf", "fps=10,scale=320:-1:flags=lanczos")
 	default:
@@ -123,8 +128,8 @@ func Audio(ffmpeg, input, output string, quality int, format string, lossless bo
 	case "ogg":
 		q := 0 + (100-quality)*10/100
 		args = append(args, "-c:a", "libvorbis", "-q:a", strconv.Itoa(q))
-	case "flac":
-		args = append(args, "-c:a", "flac", "-compression_level", "8")
+	case "png":
+		args = append(args, "-c:v", "png", "-compression_level", strconv.Itoa(9-(quality/10)))
 	case "aac", "m4a":
 		bitrate := 64 + (quality * 256 / 100)
 		args = append(args, "-c:a", "aac", "-b:a", strconv.Itoa(bitrate)+"k")

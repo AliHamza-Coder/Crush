@@ -18,6 +18,9 @@ var (
 	procReadConsoleInput = kernel32.NewProc("ReadConsoleInputW")
 )
 
+// enableLineInput disables line input, enableEchoInput disables echo, enableVTProcessing enables ANSI escape sequences.
+
+
 const (
 	stdInputHandle  = uintptr(0xfffffff5)
 	keyEvent        = 0x0001
@@ -27,6 +30,7 @@ const (
 	vkEscape        = 0x1B
 	enableLineInput = 0x0002
 	enableEchoInput = 0x0004
+	enableVTProcessing = 0x0004 // ENABLE_VIRTUAL_TERMINAL_PROCESSING
 )
 
 type inputRecord struct {
@@ -48,7 +52,9 @@ func readOneKey() (rune, uint16, bool) {
 	handle, _, _ := procGetStdHandle.Call(stdInputHandle)
 	var oldMode uint32
 	procGetConsoleMode.Call(handle, uintptr(unsafe.Pointer(&oldMode)))
+	// Disable line input and echo, then enable virtual terminal processing for ANSI escape support
 	newMode := oldMode & ^uint32(enableLineInput|enableEchoInput)
+	newMode |= uint32(enableVTProcessing)
 	procSetConsoleMode.Call(handle, uintptr(newMode))
 	defer procSetConsoleMode.Call(handle, uintptr(oldMode))
 
@@ -70,18 +76,25 @@ func readOneKey() (rune, uint16, bool) {
 	}
 }
 
+
+func countLines(items []string) int {
+	return len(items)
+}
+
 func SelectFromList(items []string, prompt string) string {
 	selected := 0
-	startLine := -1
+	firstRender := true
 
 	for {
-		if startLine < 0 {
+		if firstRender {
+			// Initial render prints prompt and items
 			fmt.Printf("\n")
 			fmt.Printf("  %s\n", prompt)
-			startLine = countLines(items) + 1
+			firstRender = false
+		} else {
+			// Clear previously printed block (prompt + items)
+			clearLines(countLines(items) + 2)
 		}
-
-		moveUp(countLines(items) + 1)
 
 		for i, item := range items {
 			if i == selected {
@@ -121,21 +134,27 @@ func SelectFromList(items []string, prompt string) string {
 			fmt.Printf("\n")
 			return ""
 		case char >= '1' && char <= '9':
-			n := int(char - '1')
-			if n < len(items) {
-				fmt.Printf("\n")
-				return items[n]
-			}
+			 n := int(char - '1')
+			 if n < len(items) {
+				 fmt.Printf("\n")
+				 return items[n]
+			 }
 		}
 	}
-}
-
-func countLines(items []string) int {
-	return len(items)
 }
 
 func moveUp(lines int) {
 	if lines > 0 {
 		fmt.Printf("\033[%dA", lines)
+	}
+}
+
+// clearLines erases the given number of lines above the cursor.
+func clearLines(lines int) {
+	for i := 0; i < lines; i++ {
+		fmt.Print("\r\033[K")
+		if i < lines-1 {
+			fmt.Print("\033[1A")
+		}
 	}
 }
