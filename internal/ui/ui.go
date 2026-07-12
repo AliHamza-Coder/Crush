@@ -51,9 +51,30 @@ func PrintInteractiveMenu() {
 	fmt.Printf("  %s[I]%s Images    — jpg, png, webp, avif, gif...\n", fileutil.Bold, fileutil.Reset)
 	fmt.Printf("  %s[V]%s Videos    — mp4, mov, webm, avi, mkv...\n", fileutil.Bold, fileutil.Reset)
 	fmt.Printf("  %s[O]%s Audio     — mp3, wav, flac, ogg, aac...\n", fileutil.Bold, fileutil.Reset)
+	fmt.Printf("  %s[X]%s Extract audio from video  — e.g., mp4 → mp3\n", fileutil.Bold, fileutil.Reset)
 	fmt.Printf("  %s[S]%s Select specific files by number\n", fileutil.Bold, fileutil.Reset)
 	fmt.Printf("  %s[D]%s Change directory\n", fileutil.Bold, fileutil.Reset)
 	fmt.Printf("  %s[Q]%s Quit\n", fileutil.Bold, fileutil.Reset)
+}
+
+func PrintQualityTable(filter string) {
+	fmt.Printf("\n")
+	fmt.Printf("  %sRecommended quality values:%s\n", fileutil.Bold, fileutil.Reset)
+	switch filter {
+	case "image", "all":
+		fmt.Printf("    %s85%s → balanced (good quality, ~50-70%% smaller)  %s★ recommended%s\n", fileutil.Green, fileutil.Reset, fileutil.Dim, fileutil.Reset)
+		fmt.Printf("    %s75%s → smaller file, slightly lower quality\n", fileutil.Yellow, fileutil.Reset)
+		fmt.Printf("    %s100%s → lossless / best quality (largest file)\n", fileutil.Cyan, fileutil.Reset)
+	case "video":
+		fmt.Printf("    %s85%s → CRF 23 (balanced, ~50%% smaller)  %s★ recommended%s\n", fileutil.Green, fileutil.Reset, fileutil.Dim, fileutil.Reset)
+		fmt.Printf("    %s70%s → CRF 28 (smaller, some quality loss)\n", fileutil.Yellow, fileutil.Reset)
+		fmt.Printf("    %s100%s → CRF 18 (near-lossless, larger)\n", fileutil.Cyan, fileutil.Reset)
+	case "audio":
+		fmt.Printf("    %s85%s → VBR ~192kbps (excellent quality)  %s★ recommended%s\n", fileutil.Green, fileutil.Reset, fileutil.Dim, fileutil.Reset)
+		fmt.Printf("    %s60%s → VBR ~128kbps (smaller, good for podcasts)\n", fileutil.Yellow, fileutil.Reset)
+		fmt.Printf("    %s100%s → maximum quality (largest file)\n", fileutil.Cyan, fileutil.Reset)
+	}
+	fmt.Printf("\n")
 }
 
 func PrintResultSummary(success, failed, skipped int64, elapsed time.Duration) {

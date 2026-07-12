@@ -112,7 +112,7 @@ func Audio(ffmpeg, input, output string, quality int, format string, lossless bo
 		default:
 			args = append(args, "-c:a", "flac", "-compression_level", "8")
 		}
-		args = append(args, "-y", output)
+		args = append(args, "-vn", "-y", output)
 		return RunFFmpeg(ffmpeg, args)
 	}
 
@@ -137,7 +137,7 @@ func Audio(ffmpeg, input, output string, quality int, format string, lossless bo
 		args = append(args, "-c:a", "libmp3lame", "-q:a", strconv.Itoa(q))
 	}
 
-	args = append(args, "-y", output)
+	args = append(args, "-vn", "-y", output)
 	return RunFFmpeg(ffmpeg, args)
 }
 

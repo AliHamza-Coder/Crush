@@ -1,5 +1,21 @@
 # Changelog
 
+## v2.2.0 (2026-07-12)
+
+### Added
+- **Two distinct modes**: Compress (shrink, keep format) vs Convert (change format)
+- **Extract audio from video** — `[X]` menu option, e.g., mp4 → mp3
+- **Recommended quality table** shown before quality prompt per media type
+- Smart defaults: empty quality = lossless, empty format = keep original
+
+### Changed
+- Clearer mode picker after selecting files
+- Quality prompt now shows recommended values (85★, 75, 100)
+- Audio extraction uses proper `-vn` flag
+
+### Fixed
+- Empty quality now defaults to lossless/best instead of arbitrary 85
+
 ## v2.1.0 (2026-07-12)
 
 ### Added

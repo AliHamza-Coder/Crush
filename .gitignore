@@ -3,8 +3,8 @@
 *.dll
 *.so
 *.dylib
-crush
-crush.exe
+/crush
+/crush.exe
 
 # Build output
 /bin/
