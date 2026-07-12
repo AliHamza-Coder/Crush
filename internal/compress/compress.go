@@ -143,6 +143,14 @@ func Audio(ffmpeg, input, output string, quality int, format string, lossless bo
 	case "mp3":
 		q := 0 + (100-quality)*9/100
 		args = append(args, "-c:a", "libmp3lame", "-q:a", strconv.Itoa(q))
+	case "flac":
+		level := 8 - (quality / 12)
+		if level < 0 {
+			level = 0
+		}
+		args = append(args, "-c:a", "flac", "-compression_level", strconv.Itoa(level))
+	case "alac":
+		args = append(args, "-c:a", "alac")
 	case "ogg":
 		q := 0 + (100-quality)*10/100
 		args = append(args, "-c:a", "libvorbis", "-q:a", strconv.Itoa(q))

@@ -10,16 +10,17 @@ import (
 	"strings"
 )
 
-const Version = "v2.3.0"
+const Version = "v2.3.1"
 
 var (
-	Reset  = "\033[0m"
-	Red    = "\033[31m"
-	Green  = "\033[32m"
-	Yellow = "\033[33m"
-	Cyan   = "\033[36m"
-	Bold   = "\033[1m"
-	Dim    = "\033[2m"
+	Reset   = "\033[0m"
+	Red     = "\033[31m"
+	Green   = "\033[32m"
+	Yellow  = "\033[33m"
+	Cyan    = "\033[36m"
+	Magenta = "\033[35m"
+	Bold    = "\033[1m"
+	Dim     = "\033[2m"
 )
 
 type FileType int

@@ -341,22 +341,28 @@ func pickExtract(ffmpeg string, files []fileutil.FileInfo, filter string) {
 		return
 	}
 
-	ui.PrintSection("Extract Audio from Video")
-	fmt.Printf("  %d video file(s) — audio will be extracted\n", len(files))
+	ui.PrintSection("Export Audio from Video")
+	fmt.Printf("  %d video file(s) — audio will be extracted to current dir\n\n", len(files))
 
-	format := ui.PrintFormatMenu("audio")
+	// Show all available audio formats the user can export to
+	format := ui.SelectFromList([]string{
+		"mp3  — MPEG Audio Layer 3 (universal)",
+		"wav  — PCM Wave (lossless, uncompressed)",
+		"flac — Free Lossless Audio Codec",
+		"ogg  — Vorbis (good compression)",
+		"aac  — Advanced Audio Codec",
+		"opus — Opus (best for low bitrate)",
+		"m4a  — MPEG-4 Audio (AAC in M4A container)",
+		"alac — Apple Lossless Audio Codec",
+	}, "Export format (↑↓ to choose, Enter to confirm):")
+
 	if format == "" {
 		format = "mp3"
 	}
+	// Extract just the format name (before the first space)
+	format = strings.Split(format, " ")[0]
 
 	quality, _ := ui.SelectQuality("audio")
-
-	backupEnabled := ui.SelectFromList([]string{"Yes — backup originals before processing", "No — skip backup"}, "Backup originals? (↑↓ to choose, Enter to confirm):") == "Yes — backup originals before processing"
-
-	bDir := ""
-	if backupEnabled {
-		bDir = ui.ReadInput("  Backup folder (Enter = ./backup/): ")
-	}
 
 	pStr := ui.ReadInput(fmt.Sprintf("  Parallel workers (Enter = %d): ", runtime.NumCPU()))
 	parallel := runtime.NumCPU()
@@ -366,18 +372,12 @@ func pickExtract(ffmpeg string, files []fileutil.FileInfo, filter string) {
 		}
 	}
 
-	runExtractAudio(ffmpeg, files, format, quality, backupEnabled, bDir, parallel)
+	runExtractAudio(ffmpeg, files, format, quality, parallel)
 }
 
-func runExtractAudio(ffmpeg string, files []fileutil.FileInfo, format string, quality int, backupEnabled bool, backupDir string, parallel int) {
+func runExtractAudio(ffmpeg string, files []fileutil.FileInfo, format string, quality int, parallel int) {
 	fmt.Printf("\n")
-	ui.PrintStep("Extracting audio...")
-
-	var backupTarget string
-	if backupEnabled {
-		backupTarget = backup.CreateDir(backupDir, ".")
-		ui.PrintOK(fmt.Sprintf("Originals backed up to: %s", backupTarget))
-	}
+	ui.PrintStep("Exporting audio...")
 
 	var success, failed int64
 	var mu sync.Mutex
@@ -393,13 +393,6 @@ func runExtractAudio(ffmpeg string, files []fileutil.FileInfo, format string, qu
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
-			if backupEnabled {
-				dst := filepath.Join(backupTarget, file.Name)
-				if err := backup.CopyFile(file.Path, dst); err != nil {
-					ui.PrintWarn(fmt.Sprintf("Backup failed: %s", file.Name))
-				}
-			}
-
 			outName := fileutil.FileNameWithoutExt(file.Name) + "." + format
 			outPath := filepath.Join(".", outName)
 			err := compress.Audio(ffmpeg, file.Path, outPath, quality, format, false)
@@ -407,17 +400,11 @@ func runExtractAudio(ffmpeg string, files []fileutil.FileInfo, format string, qu
 			mu.Lock()
 			ui.PrintProgress(idx+1, total)
 			if err != nil {
-				if backupEnabled {
-					dst := filepath.Join(backupTarget, file.Name)
-					os.Remove(dst)
-				}
 				ui.PrintFail(fmt.Sprintf("%s — %v", file.Name, err))
 				failed++
 			} else {
-				if backupEnabled {
-					os.Remove(file.Path)
-				}
-				ui.PrintOK(fmt.Sprintf("%s → %s", file.Name, outName))
+				// Original video is kept — only the audio file is created
+				ui.PrintOK(fmt.Sprintf("%s → %s (video kept)", file.Name, outName))
 				success++
 			}
 			mu.Unlock()
@@ -428,9 +415,7 @@ func runExtractAudio(ffmpeg string, files []fileutil.FileInfo, format string, qu
 	elapsed := time.Since(start)
 	fmt.Println()
 	ui.PrintResultSummary(success, failed, 0, elapsed)
-	if backupEnabled {
-		ui.PrintOK(fmt.Sprintf("Originals: %s", backupTarget))
-	}
+	ui.PrintOK("Original video files preserved in current directory")
 	ui.Pause()
 }
 

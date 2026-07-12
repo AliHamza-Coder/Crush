@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -52,16 +53,19 @@ func PrintQualityTable(filter string) {
 	switch filter {
 	case "image", "all":
 		fmt.Printf("    %s85%s → balanced (good quality, ~50-70%% smaller)  %s★ recommended%s\n", fileutil.Green, fileutil.Reset, fileutil.Dim, fileutil.Reset)
+		fmt.Printf("    %s90%s → high quality (slightly larger)\n", fileutil.Cyan, fileutil.Reset)
 		fmt.Printf("    %s75%s → smaller file, slightly lower quality\n", fileutil.Yellow, fileutil.Reset)
-		fmt.Printf("    %s100%s → lossless / best quality (largest file)\n", fileutil.Cyan, fileutil.Reset)
+		fmt.Printf("    %s100%s → lossless / best quality (largest file)\n", fileutil.Magenta, fileutil.Reset)
 	case "video":
 		fmt.Printf("    %s85%s → CRF 23 (balanced, ~50%% smaller)  %s★ recommended%s\n", fileutil.Green, fileutil.Reset, fileutil.Dim, fileutil.Reset)
+		fmt.Printf("    %s90%s → CRF 20 (high quality)\n", fileutil.Cyan, fileutil.Reset)
 		fmt.Printf("    %s70%s → CRF 28 (smaller, some quality loss)\n", fileutil.Yellow, fileutil.Reset)
-		fmt.Printf("    %s100%s → CRF 18 (near-lossless, larger)\n", fileutil.Cyan, fileutil.Reset)
+		fmt.Printf("    %s100%s → CRF 18 (near-lossless, larger)\n", fileutil.Magenta, fileutil.Reset)
 	case "audio":
 		fmt.Printf("    %s85%s → VBR ~192kbps (excellent quality)  %s★ recommended%s\n", fileutil.Green, fileutil.Reset, fileutil.Dim, fileutil.Reset)
+		fmt.Printf("    %s90%s → VBR ~256kbps (high quality)\n", fileutil.Cyan, fileutil.Reset)
 		fmt.Printf("    %s60%s → VBR ~128kbps (smaller, good for podcasts)\n", fileutil.Yellow, fileutil.Reset)
-		fmt.Printf("    %s100%s → maximum quality (largest file)\n", fileutil.Cyan, fileutil.Reset)
+		fmt.Printf("    %s100%s → maximum quality (largest file)\n", fileutil.Magenta, fileutil.Reset)
 	}
 	fmt.Printf("\n")
 }
@@ -149,30 +153,38 @@ func SelectQuality(filter string) (int, bool) {
 	case "all", "custom":
 		items = []string{
 			"85  — balanced (good quality, ~50-70% smaller)  ★ recommended",
+			"90  — high quality",
 			"75  — smaller file, slightly lower quality",
 			"100 — maximum quality, largest file",
 			"Lossless — original quality preserved",
+			"Custom — enter any value (1-100)",
 		}
 	case "video":
 		items = []string{
 			"100 — CRF 18 (near-lossless, largest)",
+			"90  — CRF 20 (high quality)",
 			"85  — CRF 23 (balanced, ~50% smaller)  ★ recommended",
 			"70  — CRF 28 (smaller, some quality loss)",
 			"Lossless — original quality, largest file",
+			"Custom — enter any value (1-100)",
 		}
 	case "audio":
 		items = []string{
 			"100 — VBR ~320kbps (maximum quality)",
+			"90  — VBR ~256kbps (high quality)",
 			"85  — VBR ~192kbps (excellent quality)  ★ recommended",
 			"60  — VBR ~128kbps (smaller, good for podcasts)",
 			"Lossless — original quality, largest file",
+			"Custom — enter any value (1-100)",
 		}
 	default:
 		items = []string{
 			"85  — balanced (good quality, ~50-70% smaller)  ★ recommended",
+			"90  — high quality",
 			"75  — smaller file, slightly lower quality",
 			"100 — maximum quality, largest file",
 			"Lossless — original quality preserved",
+			"Custom — enter any value (1-100)",
 		}
 	}
 	fmt.Printf("\n")
@@ -182,11 +194,25 @@ func SelectQuality(filter string) (int, bool) {
 		return 85, false
 	}
 
+	// Custom value — prompt user to type any number 1-100
+	if strings.Contains(choice, "Custom") {
+		for {
+			input := ReadInput("  Enter quality (1-100): ")
+			val, err := strconv.Atoi(input)
+			if err == nil && val >= 1 && val <= 100 {
+				return val, false
+			}
+			fmt.Printf("  Invalid. Enter a number between 1 and 100.\n")
+		}
+	}
+
 	switch {
 	case strings.Contains(choice, "Lossless"):
 		return 0, true
 	case strings.HasPrefix(choice, "100"):
 		return 100, false
+	case strings.HasPrefix(choice, "90"):
+		return 90, false
 	case strings.HasPrefix(choice, "85"):
 		return 85, false
 	case strings.HasPrefix(choice, "75"):

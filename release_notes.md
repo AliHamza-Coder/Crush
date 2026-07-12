@@ -1,3 +1,13 @@
+## v2.3.1 (2026-07-12)
+
+### Added
+- **Quality presets**: Choose `90` (high quality) or `Custom` (enter any value 1-100) in the quality selector
+- **Export Audio from Video**: Rewritten with dedicated format picker — pick from mp3, wav, flac, ogg, aac, opus, m4a, alac. Original video is always preserved.
+
+### Fixed
+- **Audio encoder bug**: `flac` and `alac` formats no longer silently encode as MP3 — correct codecs are used
+- **Video deletion fixed**: Audio extraction no longer deletes the original video file
+
 ## v2.3.0 (2026-07-12)
 
 ### Changed

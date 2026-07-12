@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://img.shields.io/badge/version-v2.3.0-22c55e?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-v2.3.1-22c55e?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/go-1.23-00ADD8?style=flat-square" alt="Go">
   <img src="https://img.shields.io/badge/license-MIT-22c55e?style=flat-square" alt="License">
   <br><br>
@@ -46,6 +46,7 @@ Download `crush.exe` from [releases](https://github.com/AliHamza-Coder/crush/rel
 | **Image** | jpg, jpeg, png, webp, bmp, tiff, avif, gif, ico, heic, svg | webp, avif, jpg, png, gif, bmp |
 | **Video** | mp4, mov, avi, mkv, wmv, flv, webm, m4v, mpg, 3gp, ts | mp4, webm, avi, mov, gif |
 | **Audio** | mp3, wav, flac, ogg, aac, wma, m4a, opus, aiff, alac | mp3, ogg, wav, flac, aac, opus, m4a |
+| **Export from video** | mp4, mov, webm, avi, mkv + audio codec | **→** mp3, wav, flac, ogg, aac, opus, m4a, alac |
 
 ---
 
@@ -82,7 +83,7 @@ crush analyse ./assets/
 ```
 ╔══════════════════════════════════════════════╗
 ║                                             ║
-║     ✦ CRUSH v2.3.0                          ║
+║     ✦ CRUSH v2.3.1                          ║
 ║     Media Compressor                        ║
 ║                                             ║
 ╚══════════════════════════════════════════════╝
@@ -110,11 +111,27 @@ crush analyse ./assets/
      Images     — jpg, png, webp, avif, gif...
      Videos     — mp4, mov, webm, avi, mkv...
      Audio      — mp3, wav, flac, ogg, aac...
-     Extract audio from video — e.g., mp4 → mp3
+     Export Audio from Video — mp4, mov → mp3, wav, flac...
      Select specific files by number
      Change directory
      Quit
 ```
+
+### Quality selection (with 90 + Custom presets)
+
+When compressing or extracting, you can choose:
+
+```
+  ▼ Quality (↑↓ to choose, Enter to confirm)
+     85  — balanced  ★ recommended
+     90  — high quality        🆕
+     75  — smaller file
+     100 — maximum quality
+     Lossless — original quality preserved
+     Custom — enter any value (1-100)  🆕
+```
+
+Custom lets you type any number from 1–100 (e.g. `92`, `67`, `45`).
 
 ---
 
@@ -151,12 +168,12 @@ crush (no args)
   ├─ analyse ./ → bar chart + numbered file list
   │
   └─ interactive menu (arrow keys or numbered fallback)
-       ├─ All       → prompt format/quality → parallel convert
-       ├─ Images    → prompt format/quality → parallel convert
-       ├─ Videos    → prompt format/quality → parallel convert
-       ├─ Audio     → prompt format/quality → parallel convert
-       ├─ Extract   → extract audio from video (mp4 → mp3 etc.)
-       ├─ Select    → parse "1-4,7,9-11" → prompt → convert
+       ├─ All        → prompt format/quality → parallel convert
+       ├─ Images     → prompt format/quality → parallel convert
+       ├─ Videos     → prompt format/quality → parallel convert
+       ├─ Audio      → prompt format/quality → parallel convert
+       ├─ Export Audio → pick format (mp3/wav/flac/...) → quality → extract
+       ├─ Select     → parse "1-4,7,9-11" → prompt → convert
        ├─ Change dir → re-analyse
        └─ Quit
 
@@ -182,6 +199,7 @@ Each conversion:
 | Non-interactive terminal | Falls back to numbered menu instead of arrow keys |
 | Ctrl+C during batch | Finishes current files gracefully |
 | Duplicate filenames | Backup uses timestamp directories |
+| **Audio extraction** | Original video is always preserved |
 
 ---
 
@@ -244,7 +262,7 @@ crush/
 │   ├── compress/
 │   │   └── compress.go          # Image/video/audio encoding
 │   ├── backup/
-│   │   └── backup.go            # Backup creation (missing in v2.2.6, added v2.3.0)
+│   │   └── backup.go            # Backup creation (added v2.3.0)
 │   ├── install/
 │   │   └── install.go           # Install subcommand
 │   ├── ui/
@@ -262,7 +280,19 @@ crush/
 
 ---
 
-## ✦ v2.3.0 major change
+## ✦ v2.3.1 — Quality presets + Audio export
+
+### New quality options
+- **90** — high quality option added to all media types
+- **Custom** — select and type any value (1–100) for fine-grained control
+
+### Improved Export Audio from Video
+- **8 formats**: mp3, wav, flac, ogg, aac, opus, m4a, alac — pick with descriptions
+- **Original video preserved** — only the audio file is created, never deleted
+- **Simplified flow** — no backup prompt needed for extraction
+- **Verified** — all 7 formats tested with real ffmpeg commands
+
+### v2.3.0 major change
 
 ### `promptui` → `charmbracelet/huh`
 
@@ -290,11 +320,11 @@ Create a release with any of these methods:
 
 ```powershell
 # 1. Tag and push
-git tag v2.3.0
-git push origin v2.3.0
+git tag v2.3.1
+git push origin v2.3.1
 
 # 2. GitHub CLI
-gh release create v2.3.0 ./crush.exe --title "v2.3.0" --notes "See CHANGELOG.md"
+gh release create v2.3.1 ./crush.exe --title "v2.3.1" --notes "See CHANGELOG.md"
 
 # 3. GitHub web UI → Releases → Draft a new release
 ```

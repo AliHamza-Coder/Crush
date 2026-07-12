@@ -1,5 +1,19 @@
 # Changelog
 
+## v2.3.1 (2026-07-12)
+
+### Added
+- **Quality presets**: Added `90` and `Custom` (enter any value 1-100) options to quality selection
+- **Export Audio from Video**: Rewritten with dedicated format picker (mp3, wav, flac, ogg, aac, opus, m4a, alac) — original video is preserved
+
+### Fixed
+- **Audio extraction bug**: `flac` and `alac` formats silently used MP3 encoder in non-lossless mode — now use correct codecs
+- **Original video no longer deleted** when extracting audio (was deleting if backup was enabled)
+
+### Changed
+- **Extraction flow simplified**: Removed unnecessary backup prompt (video is kept, only audio file is created)
+- Added `Magenta` color constant for visual styling
+
 ## v2.3.0 (2026-07-12)
 
 ### Changed

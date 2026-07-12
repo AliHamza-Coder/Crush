@@ -1,5 +1,16 @@
 # Binaries
 *.exe
+*.mp4
+*.wav
+*.flac
+*.ogg
+*.aac
+*.opus
+*.m4a
+*.wma
+*.avi
+*.mkv
+*.mov
 *.dll
 *.so
 *.dylib
