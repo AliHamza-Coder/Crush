@@ -18,6 +18,9 @@ func Directory(dir string) ([]fileutil.FileInfo, *fileutil.AnalyseStats) {
 			return nil
 		}
 		if info.IsDir() {
+			if strings.HasPrefix(info.Name(), "backup") || strings.HasPrefix(info.Name(), "originals_") {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		ext := strings.ToLower(filepath.Ext(path))

@@ -318,19 +318,12 @@ func compressMode(ffmpeg string, files []fileutil.FileInfo, filter string) {
 func convertMode(ffmpeg string, files []fileutil.FileInfo, filter string) {
 	ui.PrintSection("Convert Settings")
 
-	fmt.Printf("  %d file(s) selected\n\n", len(files))
-	fmt.Printf("  %sTip:%s Type a format to convert to (e.g., webp, mp4, mp3)\n", fileutil.Yellow, fileutil.Reset)
-	fmt.Printf("  %s     %s Examples: jpg→webp, mov→mp4, wav→flac, png→avif\n\n", fileutil.Yellow, fileutil.Reset)
+	fmt.Printf("  %d file(s) selected\n", len(files))
 
-	format := ui.ReadInput("  Target format: ")
+	format := ui.PrintFormatMenu(filter)
 	if format == "" {
-		ui.PrintWarn("No format entered — switching to compress mode")
+		ui.PrintWarn("No format selected — switching to compress mode")
 		compressMode(ffmpeg, files, filter)
-		return
-	}
-	if !fileutil.IsValidTargetFormat(format) {
-		ui.PrintFail(fmt.Sprintf("Unsupported format: %s", format))
-		ui.Pause()
 		return
 	}
 
@@ -384,17 +377,11 @@ func pickExtract(ffmpeg string, files []fileutil.FileInfo, filter string) {
 	}
 
 	ui.PrintSection("Extract Audio from Video")
-	fmt.Printf("  %d video file(s) — audio will be extracted\n\n", len(files))
-	fmt.Printf("  Common formats: mp3, flac, ogg, wav, m4a, opus\n\n")
+	fmt.Printf("  %d video file(s) — audio will be extracted\n", len(files))
 
-	format := ui.ReadInput("  Audio format (Enter = mp3): ")
+	format := ui.PrintFormatMenu("audio")
 	if format == "" {
 		format = "mp3"
-	}
-	if !fileutil.IsValidTargetFormat(format) {
-		ui.PrintFail(fmt.Sprintf("Unsupported format: %s", format))
-		ui.Pause()
-		return
 	}
 
 	ui.PrintQualityTable("audio")
@@ -472,6 +459,9 @@ func runExtractAudio(ffmpeg string, files []fileutil.FileInfo, format string, qu
 				ui.PrintFail(file.Name)
 				failed++
 			} else {
+				if backupEnabled {
+					os.Remove(file.Path)
+				}
 				ui.PrintOK(fmt.Sprintf("%s → %s", file.Name, outName))
 				success++
 			}
@@ -560,7 +550,17 @@ func runProcess(ffmpeg string, files []fileutil.FileInfo, format string, quality
 				ui.PrintFail(file.Name)
 				failed++
 			} else {
-				ui.PrintOK(file.Name)
+				if backupEnabled && format == "" {
+					if rmErr := os.Remove(file.Path); rmErr == nil {
+						ui.PrintOK(fmt.Sprintf("%s compressed ✓", file.Name))
+					}
+				} else if backupEnabled && format != "" {
+					if rmErr := os.Remove(file.Path); rmErr == nil {
+						ui.PrintOK(fmt.Sprintf("%s → %s ✓", file.Name, fileutil.FileNameWithoutExt(file.Name)+"."+format))
+					}
+				} else {
+					ui.PrintOK(file.Name)
+				}
 				success++
 			}
 			mu.Unlock()
@@ -657,6 +657,9 @@ func directMode(cfg Config) int {
 				ui.PrintFail(file.Name)
 				failed++
 			} else {
+				if cfg.Backup {
+					os.Remove(file.Path)
+				}
 				ui.PrintOK(file.Name)
 				success++
 			}

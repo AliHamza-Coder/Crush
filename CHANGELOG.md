@@ -1,5 +1,17 @@
 # Changelog
 
+## v2.2.2 (2026-07-12)
+
+### Fixed
+- **Files no longer duplicated** — backup/ directory excluded from analyse scan (was doubling file count)
+- **Originals deleted after successful conversion** — when backup is enabled, original file is removed from current dir (backup has the copy)
+- **Format selection menu** — pick format by number (1, 2, 3...) instead of typing name
+- **Consistent behavior** in both interactive and direct modes
+
+### Changed
+- Analyse now skips `backup*` and `originals_*` directories during walk
+- Format list shown with recommended format marked ★
+
 ## v2.2.1 (2026-07-12)
 
 ### Fixed

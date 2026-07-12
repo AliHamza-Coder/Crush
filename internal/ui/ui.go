@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -75,6 +76,50 @@ func PrintQualityTable(filter string) {
 		fmt.Printf("    %s100%s → maximum quality (largest file)\n", fileutil.Cyan, fileutil.Reset)
 	}
 	fmt.Printf("\n")
+}
+
+var FormatChoices = map[string][]string{
+	"image": {"webp", "avif", "jpg", "png", "gif"},
+	"video": {"mp4", "webm", "mov", "avi", "mkv", "gif"},
+	"audio": {"mp3", "flac", "ogg", "wav", "aac", "opus", "m4a", "alac"},
+}
+
+func PrintFormatMenu(filter string) string {
+	formats, ok := FormatChoices[filter]
+	if !ok {
+		formats = FormatChoices["image"]
+	}
+	fmt.Printf("\n")
+	fmt.Printf("  %sSelect target format:%s\n", fileutil.Bold, fileutil.Reset)
+	for i, f := range formats {
+		fmt.Printf("  %s[%d]%s %s", fileutil.Bold, i+1, fileutil.Reset, f)
+		if i == 0 {
+			fmt.Printf("  %s★ recommended%s", fileutil.Dim, fileutil.Reset)
+		}
+		fmt.Printf("\n")
+	}
+	fmt.Printf("\n")
+	return uiReadFormat(formats)
+}
+
+func uiReadFormat(formats []string) string {
+	for {
+		input := ReadInput("  Format number (or type name): ")
+		if input == "" {
+			return ""
+		}
+		if n, err := strconv.Atoi(input); err == nil && n >= 1 && n <= len(formats) {
+			return formats[n-1]
+		}
+		input = strings.ToLower(strings.TrimSpace(input))
+		for _, f := range formats {
+			if f == input {
+				return input
+			}
+		}
+		Beep()
+		fmt.Printf("  %sInvalid choice. Enter a number 1-%d or format name.%s\n", fileutil.Red, len(formats), fileutil.Reset)
+	}
 }
 
 func PrintResultSummary(success, failed, skipped int64, elapsed time.Duration) {
