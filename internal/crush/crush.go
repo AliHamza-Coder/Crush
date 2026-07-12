@@ -411,7 +411,7 @@ func runExtractAudio(ffmpeg string, files []fileutil.FileInfo, format string, qu
 					dst := filepath.Join(backupTarget, file.Name)
 					os.Remove(dst)
 				}
-				ui.PrintFail(file.Name)
+				ui.PrintFail(fmt.Sprintf("%s — %v", file.Name, err))
 				failed++
 			} else {
 				if backupEnabled {
@@ -506,7 +506,7 @@ func runProcess(ffmpeg string, files []fileutil.FileInfo, format string, quality
 					dst := filepath.Join(backupTarget, file.Name)
 					os.Remove(dst)
 				}
-				ui.PrintFail(file.Name)
+				ui.PrintFail(fmt.Sprintf("%s — %v", file.Name, err))
 				failed++
 			} else {
 				if backupEnabled && format == "" {
@@ -617,7 +617,7 @@ func directMode(cfg Config) int {
 					dst := filepath.Join(backupDir, file.Name)
 					os.Remove(dst)
 				}
-				ui.PrintFail(file.Name)
+				ui.PrintFail(fmt.Sprintf("%s — %v", file.Name, err))
 				failed++
 			} else {
 				if cfg.Backup {

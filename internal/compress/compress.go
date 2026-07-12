@@ -1,6 +1,8 @@
 package compress
 
 import (
+	"bytes"
+	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -9,9 +11,25 @@ import (
 
 func RunFFmpeg(ffmpeg string, args []string) error {
 	cmd := exec.Command(ffmpeg, args...)
-	cmd.Stderr = nil
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 	cmd.Stdout = nil
-	return cmd.Run()
+
+	err := cmd.Run()
+	if err != nil {
+		errMsg := strings.TrimSpace(stderr.String())
+		if errMsg != "" {
+			lines := strings.Split(errMsg, "\n")
+			for i := len(lines) - 1; i >= 0; i-- {
+				line := strings.TrimSpace(lines[i])
+				if line != "" {
+					return fmt.Errorf("ffmpeg: %s", line)
+				}
+			}
+		}
+		return err
+	}
+	return nil
 }
 
 func Image(ffmpeg, input, output string, quality int, format string, lossless bool) error {
