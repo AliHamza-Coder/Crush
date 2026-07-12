@@ -119,6 +119,22 @@ crush analyse ./assets/
      Quit
 ```
 
+### Quality selection (with 90 + Custom presets)
+
+When compressing or extracting, you can choose:
+
+```
+  ▼ Quality (↑↓ to choose, Enter to confirm)
+     85  — balanced  ★ recommended
+     90  — high quality
+     75  — smaller file
+     100 — maximum quality
+     Lossless — original quality preserved
+     Custom — enter any value (1-100)
+```
+
+Custom lets you type any number from 1–100 (e.g. `92`, `67`, `45`) for fine-grained control.
+
 ---
 
 ## ✦ Flags
@@ -249,6 +265,8 @@ crush/
 │   │   └── compress.go          # Image/video/audio encoding
 │   ├── backup/
 │   │   └── backup.go            # Backup creation (added v2.3.0)
+│   ├── favicon/
+│   │   └── favicon.go           # SVG favicon generator (added v2.4.0)
 │   ├── install/
 │   │   └── install.go           # Install subcommand
 │   ├── ui/
