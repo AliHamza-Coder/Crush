@@ -57,10 +57,10 @@ func PrintQualityTable(filter string) {
 		fmt.Printf("    %s75%s → smaller file, slightly lower quality\n", fileutil.Yellow, fileutil.Reset)
 		fmt.Printf("    %s100%s → lossless / best quality (largest file)\n", fileutil.Magenta, fileutil.Reset)
 	case "video":
-		fmt.Printf("    %s85%s → CRF 23 (balanced, ~50%% smaller)  %s★ recommended%s\n", fileutil.Green, fileutil.Reset, fileutil.Dim, fileutil.Reset)
-		fmt.Printf("    %s90%s → CRF 20 (high quality)\n", fileutil.Cyan, fileutil.Reset)
-		fmt.Printf("    %s70%s → CRF 28 (smaller, some quality loss)\n", fileutil.Yellow, fileutil.Reset)
-		fmt.Printf("    %s100%s → CRF 18 (near-lossless, larger)\n", fileutil.Magenta, fileutil.Reset)
+		fmt.Printf("    %s85%s → CRF 15 (excellent quality, ~40%% smaller)  %s★ recommended%s\n", fileutil.Green, fileutil.Reset, fileutil.Dim, fileutil.Reset)
+		fmt.Printf("    %s90%s → CRF 13 (high quality)\n", fileutil.Cyan, fileutil.Reset)
+		fmt.Printf("    %s70%s → CRF 20 (smaller, some quality loss)\n", fileutil.Yellow, fileutil.Reset)
+		fmt.Printf("    %s100%s → CRF 10 (near-lossless, larger)\n", fileutil.Magenta, fileutil.Reset)
 	case "audio":
 		fmt.Printf("    %s85%s → VBR ~192kbps (excellent quality)  %s★ recommended%s\n", fileutil.Green, fileutil.Reset, fileutil.Dim, fileutil.Reset)
 		fmt.Printf("    %s90%s → VBR ~256kbps (high quality)\n", fileutil.Cyan, fileutil.Reset)

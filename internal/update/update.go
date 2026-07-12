@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/AliHamza-Coder/crush/internal/fileutil"
 	"github.com/AliHamza-Coder/crush/internal/ui"
@@ -63,7 +64,8 @@ func Run() {
 }
 
 func fetchLatest() (tag, downloadURL string, err error) {
-	resp, err := http.Get("https://api.github.com/repos/AliHamza-Coder/Crush/releases/latest")
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get("https://api.github.com/repos/AliHamza-Coder/Crush/releases/latest")
 	if err != nil {
 		return "", "", err
 	}
@@ -129,7 +131,8 @@ func downloadAndReplace(url string) error {
 		return fmt.Errorf("cannot create temp file: %s", err)
 	}
 
-	resp, err := http.Get(url)
+	client := &http.Client{Timeout: 60 * time.Second}
+	resp, err := client.Get(url)
 	if err != nil {
 		tmpFile.Close()
 		os.Remove(tmpPath)

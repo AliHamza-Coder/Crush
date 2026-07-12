@@ -91,11 +91,19 @@ func Video(ffmpeg, input, output string, quality int, format string, lossless bo
 
 	if lossless {
 		args = append(args, "-c:v", "libx264", "-crf", "0", "-preset", "fast")
-		if isConversion && target != "mp4" && target != "m4v" {
-			// Re-encode audio only when converting to a different container
-			args = append(args, "-c:a", "aac", "-b:a", "320k")
-		} else {
+		switch target {
+		case "mp4", "m4v":
 			args = append(args, "-c:a", "copy")
+		case "webm":
+			args = append(args, "-c:a", "libopus", "-b:a", "320k")
+		case "mov":
+			args = append(args, "-c:a", "pcm_s16le")
+		default:
+			if isConversion {
+				args = append(args, "-c:a", "aac", "-b:a", "320k")
+			} else {
+				args = append(args, "-c:a", "copy")
+			}
 		}
 		args = append(args, "-movflags", "+faststart", "-y", output)
 		return RunFFmpeg(ffmpeg, args)

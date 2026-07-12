@@ -66,7 +66,7 @@ func Run() int {
 		case "help", "--help", "-h":
 			printUsage()
 			return 0
-		case "version", "--version", "-v":
+		case "version", "--version":
 			fmt.Printf("CRUSH %s\n", fileutil.Version)
 			return 0
 		}
@@ -85,11 +85,12 @@ func hasAnyFlags() bool {
 		if strings.HasPrefix(a, "-") {
 			return true
 		}
+		// Bare paths with no flags should enter interactive mode
 		if a == "." || a == ".." {
 			continue
 		}
 		if _, err := os.Stat(a); err == nil {
-			return true
+			continue
 		}
 		if strings.Contains(a, "*") || strings.Contains(a, "?") {
 			return true
@@ -149,7 +150,7 @@ func parseFlags() Config {
 			switch a {
 			case "-i", "--input", "-o", "--output", "-f", "--format",
 				"-q", "--quality", "-p", "--parallel", "-t", "--type",
-				"-b", "--backup", "--backup-dir":
+				"--backup-dir":
 				needsVal = true
 			}
 			if needsVal && i+1 < len(os.Args) && !strings.HasPrefix(os.Args[i+1], "-") {
@@ -675,11 +676,16 @@ func directMode(cfg Config) int {
 	}
 	if cfg.DryRun {
 		ui.PrintWarn("Dry run — no files modified")
-	} else if cfg.Backup && success > 0 {
-		ui.PrintOK(fmt.Sprintf("Backup saved to: %s", backupDir))
-	} else if cfg.Backup && success == 0 {
-		os.RemoveAll(backupDir)
-		ui.PrintWarn("All files failed — backup directory removed")
+	} else if cfg.Backup {
+		if success > 0 {
+			ui.PrintOK(fmt.Sprintf("Backup saved to: %s", backupDir))
+		} else if failed > 0 {
+			os.RemoveAll(backupDir)
+			ui.PrintWarn("All files failed — backup directory removed")
+		} else {
+			os.RemoveAll(backupDir)
+			ui.PrintWarn("All files were already in target format — no backup needed")
+		}
 	}
 
 	return 0
