@@ -14,7 +14,7 @@ func RunFFmpeg(ffmpeg string, args []string) error {
 	return cmd.Run()
 }
 
-func Image(ffmpeg, input, output string, quality int, format string) error {
+func Image(ffmpeg, input, output string, quality int, format string, lossless bool) error {
 	var args []string
 	args = append(args, "-i", input)
 
@@ -25,25 +25,37 @@ func Image(ffmpeg, input, output string, quality int, format string) error {
 
 	switch target {
 	case "webp":
-		args = append(args, "-c:v", "libwebp", "-quality", strconv.Itoa(quality), "-compression_level", "4")
+		if lossless {
+			args = append(args, "-c:v", "libwebp", "-lossless", "1", "-compression_level", "4")
+		} else {
+			args = append(args, "-c:v", "libwebp", "-quality", strconv.Itoa(quality), "-compression_level", "4")
+		}
 	case "avif":
-		crf := 20 + (100-quality)*43/100
-		args = append(args, "-c:v", "libaom-av1", "-crf", strconv.Itoa(crf), "-b:v", "0", "-strict", "experimental")
+		if lossless {
+			args = append(args, "-c:v", "libaom-av1", "-crf", "0", "-b:v", "0", "-strict", "experimental")
+		} else {
+			crf := 20 + (100-quality)*43/100
+			args = append(args, "-c:v", "libaom-av1", "-crf", strconv.Itoa(crf), "-b:v", "0", "-strict", "experimental")
+		}
 	case "png":
 		args = append(args, "-compression_level", "9")
 	case "gif":
 		args = append(args, "-vf", "fps=10,scale=320:-1:flags=lanczos")
 	default:
-		q := mapQuality(quality)
-		args = append(args, "-q:v", strconv.Itoa(q))
+		if lossless {
+			q := 1
+			args = append(args, "-q:v", strconv.Itoa(q))
+		} else {
+			q := mapQuality(quality)
+			args = append(args, "-q:v", strconv.Itoa(q))
+		}
 	}
 
 	args = append(args, "-y", output)
 	return RunFFmpeg(ffmpeg, args)
 }
 
-func Video(ffmpeg, input, output string, quality int, format string) error {
-	crf := 18 + (100-quality)*22/100
+func Video(ffmpeg, input, output string, quality int, format string, lossless bool) error {
 	var args []string
 	args = append(args, "-i", input)
 
@@ -51,6 +63,14 @@ func Video(ffmpeg, input, output string, quality int, format string) error {
 	if target == "" {
 		target = strings.TrimPrefix(filepath.Ext(output), ".")
 	}
+
+	if lossless {
+		args = append(args, "-c:v", "libx264", "-crf", "0", "-preset", "fast", "-c:a", "aac", "-b:a", "320k", "-movflags", "+faststart")
+		args = append(args, "-y", output)
+		return RunFFmpeg(ffmpeg, args)
+	}
+
+	crf := 18 + (100-quality)*22/100
 
 	switch target {
 	case "mp4", "m4v":
@@ -73,13 +93,27 @@ func Video(ffmpeg, input, output string, quality int, format string) error {
 	return RunFFmpeg(ffmpeg, args)
 }
 
-func Audio(ffmpeg, input, output string, quality int, format string) error {
+func Audio(ffmpeg, input, output string, quality int, format string, lossless bool) error {
 	var args []string
 	args = append(args, "-i", input)
 
 	target := format
 	if target == "" {
 		target = strings.TrimPrefix(filepath.Ext(output), ".")
+	}
+
+	if lossless {
+		switch target {
+		case "flac":
+			args = append(args, "-c:a", "flac", "-compression_level", "8")
+		case "wav":
+		case "alac", "m4a":
+			args = append(args, "-c:a", "alac")
+		default:
+			args = append(args, "-c:a", "flac", "-compression_level", "8")
+		}
+		args = append(args, "-y", output)
+		return RunFFmpeg(ffmpeg, args)
 	}
 
 	switch target {

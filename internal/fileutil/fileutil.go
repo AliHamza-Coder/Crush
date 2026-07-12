@@ -84,6 +84,7 @@ var (
 		".aac": "AAC", ".wma": "WMA", ".m4a": "M4A", ".opus": "Opus",
 		".aiff": "AIFF", ".alac": "ALAC",
 	}
+
 )
 
 func DetectType(ext string) FileType {
@@ -208,7 +209,7 @@ func IsValidTargetFormat(format string) bool {
 		"png": true, "gif": true, "bmp": true,
 		"mp4": true, "webm": true, "avi": true, "mov": true, "mkv": true,
 		"mp3": true, "ogg": true, "wav": true, "flac": true,
-		"aac": true, "opus": true, "m4a": true,
+		"aac": true, "opus": true, "m4a": true, "alac": true,
 	}
 	return valid[f]
 }
