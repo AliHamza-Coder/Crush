@@ -20,6 +20,22 @@ func RunFFmpeg(ffmpeg string, args []string) error {
 		errMsg := strings.TrimSpace(stderr.String())
 		if errMsg != "" {
 			lines := strings.Split(errMsg, "\n")
+			// Pick the most useful line: the FIRST line that contains an
+			// error indicator, not ffmpeg's generic final "Conversion failed!".
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if line == "" {
+					continue
+				}
+				lower := strings.ToLower(line)
+				if strings.Contains(lower, "error") || strings.Contains(lower, "failed") ||
+					strings.Contains(lower, "not found") || strings.Contains(lower, "unable") ||
+					strings.Contains(lower, "invalid") || strings.Contains(lower, "no such") ||
+					strings.Contains(lower, "permission") || strings.Contains(lower, "denied") {
+					return fmt.Errorf("ffmpeg: %s", line)
+				}
+			}
+			// Fallback: last non-empty line (often "Conversion failed!")
 			for i := len(lines) - 1; i >= 0; i-- {
 				line := strings.TrimSpace(lines[i])
 				if line != "" {
@@ -150,7 +166,22 @@ func Video(ffmpeg, input, output string, quality int, format string, lossless bo
 	}
 
 	args = append(args, "-y", output)
-	return RunFFmpeg(ffmpeg, args)
+	err := RunFFmpeg(ffmpeg, args)
+	if err != nil && !isConversion {
+		// In-place compress uses -c:a copy. If the source audio codec can't be
+		// stream-copied into the target container (e.g. Opus -> MP4), retry once
+		// by re-encoding the audio to AAC instead of failing.
+		retry := []string{}
+		for _, a := range args {
+			if a == "copy" {
+				retry = append(retry, "aac", "-b:a", "192k")
+				continue
+			}
+			retry = append(retry, a)
+		}
+		return RunFFmpeg(ffmpeg, retry)
+	}
+	return err
 }
 
 func Audio(ffmpeg, input, output string, quality int, format string, lossless bool) error {

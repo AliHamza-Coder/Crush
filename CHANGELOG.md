@@ -1,5 +1,18 @@
 # Changelog
 
+## v2.5.0 (2026-08-14)
+
+### Added
+- **Arrange files by type** — interactive menu option + `crush arrange [dir]` command
+  - Creates folders like `All webp`, `All mp4`, `All mp3` automatically
+  - Moves every file into its matching extension folder
+  - Works with any extension (media and non-media), skips existing backups/`All *` folders
+
+### Fixed
+- **Real ffmpeg errors now shown** — previously only the generic last stderr line ("Conversion failed!") was displayed, hiding the actual cause
+  - Now extracts the first meaningful error line (e.g. "moov atom not found", "codec not found")
+- **Video compression retry with audio re-encode** — if in-place compression fails because the source audio codec can't be stream-copied into the container (e.g. Opus → MP4), it automatically retries re-encoding audio to AAC instead of failing
+
 ## v2.4.0 (2026-07-12)
 
 ### Added

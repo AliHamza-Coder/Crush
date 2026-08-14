@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://img.shields.io/badge/version-v2.4.0-22c55e?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-v2.5.0-22c55e?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/go-1.23-00ADD8?style=flat-square" alt="Go">
   <img src="https://img.shields.io/badge/license-MIT-22c55e?style=flat-square" alt="License">
   <br><br>
@@ -39,6 +39,7 @@ Download `crush.exe` from [releases](https://github.com/AliHamza-Coder/crush/rel
 | **Analyse** | `crush analyse` | Show directory breakdown with bar charts |
 | **Analyse JSON** | `crush analyse --json` | Machine-readable output |
 | **Favicon** | `crush` → menu option | Generate 16×16 + 32×32 SVG favicons from images |
+| **Arrange** | `crush arrange [dir]` | Move files into `All webp`, `All mp4`, ... folders |
 
 ### Formats
 
@@ -85,7 +86,7 @@ crush analyse ./assets/
 ```
 ┌─────────────────────────────────────────────────────┐
 │                                                     │
-│     ✦ CRUSH v2.4.0 — Lightning-fast media compressor │
+│     ✦ CRUSH v2.5.0 — Lightning-fast media compressor │
 │                                                     │
 └─────────────────────────────────────────────────────┘
 
@@ -114,8 +115,9 @@ crush analyse ./assets/
      Audio      — mp3, wav, flac, ogg, aac...
      Export Audio from Video — mp4, mov → mp3, wav, flac...
      Select specific files by number
+     Arrange files by type — make 'All webp', 'All mp4' folders  🆕
      Change directory
-     Generate Favicon — 16×16 + 32×32 SVG from image  🆕
+     Generate Favicon — 16×16 + 32×32 SVG from image
      Quit
 ```
 
@@ -158,6 +160,7 @@ Custom lets you type any number from 1–100 (e.g. `92`, `67`, `45`) for fine-gr
   crush install      Auto-install FFmpeg + setup PATH
   crush analyse      Show directory analysis
   crush analyse --json   JSON output for scripts
+  crush arrange      Move files into 'All <ext>' folders (e.g. 'All webp')
 ```
 
 ---
@@ -177,6 +180,7 @@ crush (no args)
        ├─ Export Audio → pick format (mp3/wav/flac/...) → quality → extract
        ├─ Favicon    → pick image → generate 16×16 + 32×32 SVG
        ├─ Select     → parse "1-4,7,9-11" → prompt → convert
+       ├─ Arrange    → make 'All webp', 'All mp4' folders & move files
        ├─ Change dir → re-analyse
        └─ Quit
 

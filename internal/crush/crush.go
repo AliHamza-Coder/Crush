@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/AliHamza-Coder/crush/internal/analyse"
+	"github.com/AliHamza-Coder/crush/internal/arrange"
 	"github.com/AliHamza-Coder/crush/internal/backup"
 	"github.com/AliHamza-Coder/crush/internal/compress"
 	"github.com/AliHamza-Coder/crush/internal/favicon"
@@ -62,6 +63,13 @@ func Run() int {
 				}
 			}
 			runAnalyse(dir, jsonMode)
+			return 0
+		case "arrange":
+			dir := "."
+			if len(os.Args) > 2 && !strings.HasPrefix(os.Args[2], "-") {
+				dir = os.Args[2]
+			}
+			arrange.Run(dir)
 			return 0
 		case "help", "--help", "-h":
 			printUsage()
@@ -200,7 +208,8 @@ func printUsage() {
 	fmt.Printf("  crush update                 Check for updates and self-update\n")
 	fmt.Printf("  crush uninstall              Remove CRUSH from your system\n")
 	fmt.Printf("  crush analyse                Analyse directory only\n")
-	fmt.Printf("  crush analyse --json         Analyse as JSON\n\n")
+	fmt.Printf("  crush analyse --json         Analyse as JSON\n")
+	fmt.Printf("  crush arrange [dir]          Move files into 'All <ext>' folders\n\n")
 	fmt.Printf("%sFLAGS%s\n", fileutil.Bold, fileutil.Reset)
 	fmt.Printf("  -i, --input <path>    Input (%s)\n", c("default: ."))
 	fmt.Printf("  -o, --output <dir>    Output directory (%s)\n", c("default: same as input"))
@@ -253,6 +262,7 @@ func interactiveMode() int {
 			"Audio      — mp3, wav, flac, ogg, aac...",
 			"Extract audio from video — e.g., mp4 → mp3",
 			"Select specific files by number",
+			"Arrange files by type — make 'All webp', 'All mp4' folders",
 			"Change directory",
 			"Generate Favicon — 16×16 + 32×32 SVG from image",
 			"Quit",
@@ -271,7 +281,8 @@ func interactiveMode() int {
 			pickExtract(ffmpeg, fileutil.FilterByType(files, "video"), "video")
 		case "Select specific files by number":
 			selectSpecific(ffmpeg, files)
-		case "Change directory":
+		case "Arrange files by type — make 'All webp', 'All mp4' folders":
+			arrange.Run(dir)
 			d := ui.ReadInput("  Enter directory: ")
 			if d != "" {
 				dir = d
