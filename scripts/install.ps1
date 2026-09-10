@@ -1,60 +1,50 @@
-<#
-.SYNOPSIS
-    CRUSH — One-command installer for Windows
-.DESCRIPTION
-    Downloads crush.exe and sets up PATH automatically.
-    Run: iex "& {$(iwr -Uri https://raw.githubusercontent.com/AliHamza-Coder/crush/main/scripts/install.ps1)}"
-.PARAMETER Portable
-    Skip PATH setup, download to current directory
-#>
+# CRUSH Installer - One command install
+# Usage: irm https://raw.githubusercontent.com/AliHamza-Coder/Crush/main/scripts/install.ps1 | iex
 
-param([switch]$Portable)
-
-$repo = "AliHamza-Coder/crush"
-$url = "https://github.com/$repo/releases/latest/download/crush.exe"
-
-if ($Portable) {
-    $exePath = Join-Path (Get-Location) "crush.exe"
-} else {
-    $installDir = Join-Path $env:LOCALAPPDATA "crush"
-    $exePath = Join-Path $installDir "crush.exe"
-    New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-}
-
-Write-Host "╔═══════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║     CRUSH Installer                   ║" -ForegroundColor Cyan
-Write-Host "╚═══════════════════════════════════════╝" -ForegroundColor Cyan
-Write-Host ""
-
-try {
-    Write-Host "Downloading CRUSH..." -NoNewline
-    # Force TLS 1.2 — required by GitHub on older PowerShell
-    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-    Invoke-WebRequest -Uri $url -OutFile $exePath -UseBasicParsing -ErrorAction Stop
-    Write-Host " ✓" -ForegroundColor Green
-} catch {
-    Write-Host " ✗ Failed: $_" -ForegroundColor Red
-    exit 1
-}
-
-if (-not $Portable) {
-    $path = [Environment]::GetEnvironmentVariable('Path', 'User')
-    if ($path -notlike "*$installDir*") {
-        [Environment]::SetEnvironmentVariable('Path', "$path;$installDir", 'User')
-        Write-Host "Added to PATH: $installDir" -ForegroundColor Green
-    }
-    Write-Host ""
-    Write-Host "Install FFmpeg? (required)" -ForegroundColor Yellow
-    Write-Host "  Run: winget install -e --id Gyan.FFmpeg" -ForegroundColor Cyan
-}
+$ErrorActionPreference = "Stop"
 
 Write-Host ""
-Write-Host "╔═══════════════════════════════════════╗" -ForegroundColor Green
-Write-Host "║  ✓ READY                              ║" -ForegroundColor Green
-if ($Portable) {
-    Write-Host "║     crush.exe is in current folder    ║" -ForegroundColor Green
-} else {
-    Write-Host "║     Run 'crush' from any terminal      ║" -ForegroundColor Green
+Write-Host "  ╔════════════════════════════════════╗" -ForegroundColor Cyan
+Write-Host "  ║      CRUSH v3.0.0 Installer        ║" -ForegroundColor Cyan
+Write-Host "  ╚════════════════════════════════════╝" -ForegroundColor Cyan
+Write-Host ""
+
+$installDir = "$env:USERPROFILE\Crush"
+$tempDir = "$env:TEMP\crush-build"
+
+Write-Host "  [1/4] Cloning repository..." -ForegroundColor Yellow
+if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force }
+git clone --depth 1 https://github.com/AliHamza-Coder/Crush.git $tempDir 2>&1 | Out-Null
+
+Write-Host "  [2/4] Building release binary..." -ForegroundColor Yellow
+Push-Location $tempDir
+cargo build --release 2>&1 | Out-Null
+Pop-Location
+
+Write-Host "  [3/4] Installing to $installDir..." -ForegroundColor Yellow
+if (Test-Path $installDir) { Remove-Item $installDir -Recurse -Force }
+New-Item -ItemType Directory -Path $installDir -Force | Out-Null
+Copy-Item "$tempDir\target\release\crush.exe" "$installDir\crush.exe"
+
+# Create batch wrapper
+$batContent = "@echo off`r`n`"$installDir\crush.exe`" %*"
+Set-Content -Path "$installDir\crush.bat" -Value $batContent
+
+Write-Host "  [4/4] Adding to PATH..." -ForegroundColor Yellow
+$currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($currentPath -notlike "*$installDir*") {
+    [Environment]::SetEnvironmentVariable("Path", "$currentPath;$installDir", "User")
+    $env:Path = "$env:Path;$installDir"
 }
-Write-Host "║     Developed by Ali Hamza Coder       ║" -ForegroundColor Green
-Write-Host "╚═══════════════════════════════════════╝" -ForegroundColor Green
+
+# Cleanup
+Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+
+Write-Host ""
+Write-Host "  ✓ CRUSH installed successfully!" -ForegroundColor Green
+Write-Host ""
+Write-Host "  Run: crush" -ForegroundColor Cyan
+Write-Host "  Or: crush analyse ." -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  Restart your terminal to refresh PATH." -ForegroundColor DarkGray
+Write-Host ""
