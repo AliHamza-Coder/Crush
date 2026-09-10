@@ -2,7 +2,6 @@
 ; Installs crush.exe to Program Files and adds to PATH
 
 !include "MUI2.nsh"
-!include "LogicFunc.nsh"
 
 Name "CRUSH"
 OutFile "crush-setup.exe"
@@ -34,8 +33,9 @@ Section "Install"
     ; Create uninstaller
     WriteUninstaller "$INSTDIR\uninstall.exe"
     
-    ; Add to system PATH
-    EnVar::AddValue "PATH" "$INSTDIR"
+    ; Add to system PATH via registry
+    ReadRegStr $0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
+    WriteRegStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$0;$INSTDIR"
     
     ; Create Start Menu shortcuts
     CreateDirectory "$SMPROGRAMS\CRUSH"
@@ -59,8 +59,12 @@ Section "Uninstall"
     Delete "$INSTDIR\uninstall.exe"
     RMDir "$INSTDIR"
     
-    ; Remove from PATH
-    EnVar::RemoveValue "PATH" "$INSTDIR"
+    ; Remove from PATH via registry
+    ReadRegStr $0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
+    StrReplace $0 "$0" ";$INSTDIR" ""
+    StrReplace $0 "$0" "$INSTDIR;" ""
+    StrReplace $0 "$0" "$INSTDIR" ""
+    WriteRegStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$0"
     
     ; Remove Start Menu shortcuts
     RMDir /r "$SMPROGRAMS\CRUSH"
