@@ -32,11 +32,13 @@ def main():
     latest = parse(sys.argv[2])
 
     if current > latest:
-        print("gt")
+        result = "gt"
     elif current == latest:
-        print("eq")
+        result = "eq"
     else:
-        print("lt")
+        result = "lt"
+
+    print(f"result={result}")
 
 
 if __name__ == "__main__":

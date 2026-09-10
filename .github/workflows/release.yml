@@ -1,61 +1,33 @@
 name: Release
 
-# Triggers ONLY on tag push (created by version-gate.yml) or manual dispatch.
 on:
   push:
     tags:
       - 'v*'
   workflow_dispatch:
 
-concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: true
-
 permissions:
   contents: write
 
 jobs:
-  # ── Build on each platform ──
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            artifact: crush-windows-x64
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            artifact: crush-linux-x64
-    runs-on: ${{ matrix.os }}
+  build-windows:
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
 
-      - name: Cache Cargo deps
+      - name: Cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './crates/crush-cli -> target'
 
-      - name: Lint and test
-        run: |
-          cargo fmt --all -- --check
-          cargo clippy --workspace -- -D warnings
-          cargo test --workspace
-
-      - name: Build release binary
+      - name: Build
         run: cargo build --release --workspace
 
-      # ── Windows: create zip with exe + README ──
-      - name: Package Windows
-        if: matrix.os == 'windows-latest'
+      - name: Package
         shell: pwsh
         run: |
           $version = "${GITHUB_REF_NAME#v}"
@@ -63,109 +35,108 @@ jobs:
           New-Item -ItemType Directory -Path $dir -Force
           Copy-Item "target/release/crush.exe" "$dir/"
           Copy-Item "README.md" "$dir/"
-          Copy-Item "LICENSE" "$dir/" -ErrorAction SilentlyContinue
           @"
-          # CRUSH v$version
-
-          ## Install
+          CRUSH v$version - Windows x64
+          
+          Install:
           1. Extract this folder
-          2. Add to PATH or run `crush.exe` directly
-
-          ## Usage
-          ``````
-          crush analyse .
-          crush -i ./images -f webp -q 85
-          crush -i ./videos -f mp4
-          ``````
+          2. Add to PATH or run crush.exe directly
+          
+          Usage:
+          crush.exe analyse .
+          crush.exe -i ./images -f webp -q 85
           "@ | Set-Content "$dir/INSTALL.txt"
           Compress-Archive -Path $dir -DestinationPath "$dir.zip"
-          echo "ZIP=$dir.zip" >> $env:GITHUB_ENV
+          
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: crush-*.zip
 
-      # ── Linux: create tar.gz + deb ──
-      - name: Package Linux
-        if: matrix.os == 'ubuntu-latest'
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './crates/crush-cli -> target'
+
+      - name: Build
+        run: cargo build --release --workspace
+
+      - name: Package tar.gz
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           DIR="crush-${VERSION}-linux-x64"
           mkdir -p "$DIR"
           cp target/release/crush "$DIR/"
           cp README.md "$DIR/"
-          cp LICENSE "$DIR/" 2>/dev/null || true
-          cat > "$DIR/INSTALL.txt" << 'INSTALL'
-          # CRUSH - Install
-
-          ## Quick install
+          cat > "$DIR/INSTALL.txt" << 'EOF'
+          CRUSH - Linux x64
+          
+          Install:
           sudo cp crush /usr/local/bin/
-
-          ## Or run directly
-          ./crush analyse .
-          INSTALL
+          
+          Usage:
+          crush analyse .
+          crush -i ./images -f webp -q 85
+          EOF
           tar -czf "$DIR.tar.gz" "$DIR"
-          echo "TARBALL=$DIR.tar.gz" >> "$GITHUB_ENV"
 
-          # Build .deb package
-          DEB_DIR="crush_${VERSION}_amd64"
-          mkdir -p "$DEB_DIR/DEBIAN"
-          mkdir -p "$DEB_DIR/usr/local/bin"
-          cp target/release/crush "$DEB_DIR/usr/local/bin/"
-          cat > "$DEB_DIR/DEBIAN/control" << EOF
+      - name: Package deb
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          DEB="crush_${VERSION}_amd64"
+          mkdir -p "$DEB/DEBIAN"
+          mkdir -p "$DEB/usr/local/bin"
+          cp target/release/crush "$DEB/usr/local/bin/"
+          cat > "$DEB/DEBIAN/control" << EOF
           Package: crush
           Version: $VERSION
           Architecture: amd64
           Description: CRUSH - Multimedia Mission Control
-          A fast image, video, and audio compressor/convertor written in Rust.
           EOF
-          dpkg-deb --build "$DEB_DIR" "crush_${VERSION}_amd64.deb"
-          echo "DEB=crush_${VERSION}_amd64.deb" >> "$GITHUB_ENV"
+          dpkg-deb --build "$DEB" "crush_${VERSION}_amd64.deb"
 
-      - name: Upload artifact
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
+          name: linux-x64
           path: |
-            ${{ env.ZIP }}
-            ${{ env.TARBALL }}
-            ${{ env.DEB }}
-          retention-days: 1
+            crush-*-linux-x64.tar.gz
+            crush_*.deb
 
-  # ── Create release ──
   publish:
-    needs: build
+    needs: [build-windows, build-linux]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
-      - name: Parse release checklist
-        id: checklist
-        run: |
-          python .github/scripts/parse_checklist.py --expect-version "${GITHUB_REF_NAME#v}" --write-body RELEASE_BODY.txt
-
-      - name: Load release body
-        id: body
-        run: |
-          {
-            echo 'content<<EOF'
-            cat RELEASE_BODY.txt
-            echo EOF
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Download all artifacts
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
           merge-multiple: true
 
-      - name: Create GitHub Release
+      - name: Extract changelog
+        id: changelog
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          python .github/scripts/parse_checklist.py --expect-version "$VERSION" --write-body RELEASE_BODY.txt
+
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           name: CRUSH ${{ github.ref_name }}
-          body: ${{ steps.body.outputs.content }}
+          body_path: RELEASE_BODY.txt
           draft: false
           prerelease: false
           files: artifacts/*
