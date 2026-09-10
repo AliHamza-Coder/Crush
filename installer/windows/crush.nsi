@@ -27,8 +27,8 @@ Section "Install"
     SetOutPath "$INSTDIR"
     
     ; Install files
-    File "target\release\crush.exe"
-    File "README.md"
+    File "..\..\target\release\crush.exe"
+    File "..\..\README.md"
     
     ; Create uninstaller
     WriteUninstaller "$INSTDIR\uninstall.exe"

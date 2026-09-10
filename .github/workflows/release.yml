@@ -31,9 +31,9 @@ jobs:
         run: choco install nsis -y
 
       - name: Build Installer
+        shell: pwsh
         run: |
-          cd installer/windows
-          & "C:\Program Files (x86)\NSIS\makensis.exe" crush.nsi
+          & "C:\Program Files (x86)\NSIS\makensis.exe" "installer\windows\crush.nsi"
 
       - name: Package Portable
         shell: pwsh
