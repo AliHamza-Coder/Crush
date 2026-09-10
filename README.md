@@ -1,358 +1,298 @@
-<div align="center">
-  <img src="https://img.shields.io/badge/version-v2.5.0-22c55e?style=flat-square" alt="Version">
-  <img src="https://img.shields.io/badge/go-1.23-00ADD8?style=flat-square" alt="Go">
-  <img src="https://img.shields.io/badge/license-MIT-22c55e?style=flat-square" alt="License">
-  <br><br>
-  <h1>✦ CRUSH ✦</h1>
-  <p><strong>Lightning-fast media compressor for developers</strong></p>
-  <p>Built with Go • Powered by FFmpeg</p>
-  <br>
-  <p>
-    <code>crush</code> • <code>crush -f webp -q 90</code> • <code>crush install</code>
-  </p>
-  <br>
-</div>
+# CRUSH v3.0.0 — Multimedia Mission Control
 
----
+A blazing-fast media compressor and converter written in Rust, with a professional terminal UI. Compress images, videos, and audio with a single command.
 
-## ✦ One-command install
+## Features
 
-```powershell
-iex "& {$(iwr -Uri https://raw.githubusercontent.com/AliHamza-Coder/crush/main/scripts/install.ps1)}"
+- **3 Processing Engines**: FFmpeg (video/audio), Native Rust (image), ONNX AI (4x upscale)
+- **Terminal TUI**: Professional Ratatui interface with mouse support
+- **Quality Presets**: Recommended quality levels with descriptions
+- **Backup System**: Automatic backup before processing with timestamped folders
+- **Format Support**: 20+ formats including webp, avif, mp4, webm, mp3, flac, ogg, wav, and more
+- **Batch Processing**: Process entire directories with parallel workers
+- **Smart Skip**: Automatically skips files already in target format
+
+## Quick Start
+
+```bash
+# Build
+cargo build --release
+
+# Run TUI
+cargo run --release
+
+# Run CLI
+cargo run --release -- analyse .
+cargo run --release -- -i ./images -f webp -q 85
 ```
 
-Downloads `crush.exe`, adds to PATH. Then run `crush install` to install FFmpeg.
+## Installation
 
-### Portable (no install)
+### Windows (Recommended)
 
-Download `crush.exe` from [releases](https://github.com/AliHamza-Coder/crush/releases), place `ffmpeg.exe` next to it, run.
+```bash
+# Install via cargo
+cargo install --path crates/crush-cli
 
----
-
-## ✦ What it does
-
-| Mode | Command | Description |
-|------|---------|-------------|
-| **Interactive** | `crush` | Analyse directory + arrow-key menu-driven conversion |
-| **Direct CLI** | `crush -f webp -q 90` | One command, no prompts |
-| **Install** | `crush install` | Auto-install FFmpeg via winget/brew/apt |
-| **Analyse** | `crush analyse` | Show directory breakdown with bar charts |
-| **Analyse JSON** | `crush analyse --json` | Machine-readable output |
-| **Favicon** | `crush` → menu option | Generate 16×16 + 32×32 SVG favicons from images |
-| **Arrange** | `crush arrange [dir]` | Move files into `All webp`, `All mp4`, ... folders |
-
-### Formats
-
-| Type | Input | Output |
-|------|-------|--------|
-| **Image** | jpg, jpeg, png, webp, bmp, tiff, avif, gif, ico, heic, svg | webp, avif, jpg, png, gif, bmp |
-| **Video** | mp4, mov, avi, mkv, wmv, flv, webm, m4v, mpg, 3gp, ts | mp4, webm, avi, mov, gif |
-| **Audio** | mp3, wav, flac, ogg, aac, wma, m4a, opus, aiff, alac | mp3, ogg, wav, flac, aac, opus, m4a |
-| **Export from video** | mp4, mov, webm, avi, mkv + audio codec | **→** mp3, wav, flac, ogg, aac, opus, m4a, alac |
-| **Favicon** | png, jpg, webp, avif, ... | **→** 16×16 + 32×32 SVG |
-
----
-
-## ✦ Quick start
-
-```powershell
-# Interactive mode — analyse + arrow-key menu
-crush
-
-# Convert everything in current dir to WebP
-crush -f webp -q 90
-
-# Compress a single video
-crush video.mp4 -q 80
-
-# All videos to WebM, 6 parallel workers
-crush . -t video -f webm -p 6
-
-# Batch convert audio to MP3
-crush . -t audio -f mp3
-
-# Process folder to custom output, no backup
-crush ./raw/ -o ./optimised/ --no-backup
-
-# Preview only (dry run)
-crush -n
-
-# Analyse directory
-crush analyse ./assets/
-```
-
-### Interactive mode walkthrough
-
-```
-┌─────────────────────────────────────────────────────┐
-│                                                     │
-│     ✦ CRUSH v2.5.0 — Lightning-fast media compressor │
-│                                                     │
-└─────────────────────────────────────────────────────┘
-
-  ✦ Developed by Ali Hamza Coder ✦
-
-  Directory: C:\projects\site\assets
-
-  Images ████████████████████  12  24.5 MB
-  Videos ████████               5  120.1 MB
-  Audio  ████                   3   8.5 MB
-
-  Total: 20 files | 153.1 MB
-  Formats: JPEG x6  PNG x4  WebP x2  MP4 x3  WebM x2  MP3 x3
-
-  #    Type      Size       Format   Filename
-  1    JPEG      4.5 MB     JPG      photo1.jpg
-  2    PNG       2.1 MB     PNG      hero.png
-  3    WebP      1.1 MB     WebP     banner.webp
-  4    MP4       45.2 MB    MP4      intro.mp4
-  ...
-
-  ▼ Choose Action (↑↓ to choose, Enter to confirm)
-     ALL files  — images + videos + audio
-     Images     — jpg, png, webp, avif, gif...
-     Videos     — mp4, mov, webm, avi, mkv...
-     Audio      — mp3, wav, flac, ogg, aac...
-     Export Audio from Video — mp4, mov → mp3, wav, flac...
-     Select specific files by number
-     Arrange files by type — make 'All webp', 'All mp4' folders  🆕
-     Change directory
-     Generate Favicon — 16×16 + 32×32 SVG from image
-     Quit
-```
-
-### Quality selection (with 90 + Custom presets)
-
-When compressing or extracting, you can choose:
-
-```
-  ▼ Quality (↑↓ to choose, Enter to confirm)
-     85  — balanced  ★ recommended
-     90  — high quality
-     75  — smaller file
-     100 — maximum quality
-     Lossless — original quality preserved
-     Custom — enter any value (1-100)
-```
-
-Custom lets you type any number from 1–100 (e.g. `92`, `67`, `45`) for fine-grained control.
-
----
-
-## ✦ Flags
-
-```
-  -i, --input <path>    Input file, directory, or glob  (default: .)
-  -o, --output <dir>    Output directory                (default: same as input)
-  -f, --format <fmt>    Target format                    (webp, mp4, mp3, ...)
-  -q, --quality <1-100> Quality                          (default: 85)
-  -b, --backup          Backup originals                 (default: true)
-  --no-backup           Skip backup
-  -p, --parallel <n>    Parallel workers                 (default: CPU cores)
-  -t, --type <type>     Filter: image, video, audio      (default: all)
-  -n, --dry-run         Preview without processing
-  -v, --verbose         Show ffmpeg output
-```
-
-### Subcommands
-
-```
-  crush install      Auto-install FFmpeg + setup PATH
-  crush analyse      Show directory analysis
-  crush analyse --json   JSON output for scripts
-  crush arrange      Move files into 'All <ext>' folders (e.g. 'All webp')
-```
-
----
-
-## ✦ How it works
-
-```
-crush (no args)
-  │
-  ├─ analyse ./ → bar chart + numbered file list
-  │
-  └─ interactive menu (arrow keys or numbered fallback)
-       ├─ All        → prompt format/quality → parallel convert
-       ├─ Images     → prompt format/quality → parallel convert
-       ├─ Videos     → prompt format/quality → parallel convert
-       ├─ Audio      → prompt format/quality → parallel convert
-       ├─ Export Audio → pick format (mp3/wav/flac/...) → quality → extract
-       ├─ Favicon    → pick image → generate 16×16 + 32×32 SVG
-       ├─ Select     → parse "1-4,7,9-11" → prompt → convert
-       ├─ Arrange    → make 'All webp', 'All mp4' folders & move files
-       ├─ Change dir → re-analyse
-       └─ Quit
-
-Each conversion:
-  1. Backup originals → backup_<timestamp>/
-  2. Skip files already in target format
-  3. Process N files in parallel
-  4. Summary: ✓ OK | ✗ FAIL | ⏭ SKIP | ⏱ time
-```
-
----
-
-## ✦ Edge cases
-
-| Scenario | Behaviour |
-|----------|-----------|
-| Empty directory | Prompts for another directory |
-| No FFmpeg | Shows install instructions |
-| Already target format | Skipped automatically |
-| Invalid range (`abc`) | Error with re-prompt |
-| Reversed range (`5-1`) | Treated as `1-5` |
-| Quality out of range | Clamped to 1-100 |
-| Non-interactive terminal | Falls back to numbered menu instead of arrow keys |
-| Ctrl+C during batch | Finishes current files gracefully |
-| Duplicate filenames | Backup uses timestamp directories |
-| **Audio extraction** | Original video is always preserved |
-| **Favicon** — no images | Shows warning and returns to menu |
-
----
-
-## ✦ Installation
-
-### Windows (recommended)
-
-```powershell
-# One-liner (also works without Git)
-iex "& {$(iwr -Uri https://raw.githubusercontent.com/AliHamza-Coder/crush/main/scripts/install.ps1)}"
-
-# Then install FFmpeg
-crush install
-```
-
-### Portable
-
-```powershell
-# Download crush.exe + ffmpeg.exe to same folder
-# Run from that folder — no PATH needed
-./crush
-```
-
-### Build from source
-
-```powershell
-# Requires Go 1.23+
-git clone https://github.com/AliHamza-Coder/crush.git
-cd crush
-go build -o crush.exe ./cmd/crush/
+# Or copy the binary to a folder in your PATH
+copy target\release\crush.exe C:\Users\YourName\.cargo\bin\
 ```
 
 ### Linux / macOS
 
 ```bash
-# Requires Go 1.23+
-git clone https://github.com/AliHamza-Coder/crush.git
-cd crush
-go build -o crush ./cmd/crush/
+# Install via cargo
+cargo install --path crates/crush-cli
 
-# Install FFmpeg if needed
-sudo apt install ffmpeg       # Debian/Ubuntu
-brew install ffmpeg           # macOS
+# Or copy to /usr/local/bin
+cp target/release/crush /usr/local/bin/
 ```
 
----
+## Dependencies
 
-## ✦ Project structure
+### Required
+- **Rust 1.75+** — Build toolchain
 
-```
-crush/
-├── cmd/
-│   └── crush/
-│       └── main.go              # Entry point
-├── internal/
-│   ├── crush/
-│   │   └── crush.go             # Config, flags, orchestrator
-│   ├── analyse/
-│   │   └── analyse.go           # Directory scanner + stats
-│   ├── compress/
-│   │   └── compress.go          # Image/video/audio encoding
-│   ├── backup/
-│   │   └── backup.go            # Backup creation (added v2.3.0)
-│   ├── favicon/
-│   │   └── favicon.go           # SVG favicon generator (added v2.4.0)
-│   ├── install/
-│   │   └── install.go           # Install subcommand
-│   ├── ui/
-│   │   ├── ui.go                # Colours, banners, helpers
-│   │   └── term.go             # Arrow-key + fallback menus (huh)
-│   └── fileutil/
-│       └── fileutil.go          # Types, enums, file utils
-├── scripts/
-│   └── install.ps1              # One-line PowerShell installer
-├── go.mod
-├── README.md
-├── CHANGELOG.md
-└── .gitignore
+### Optional
+- **FFmpeg** — Video/audio processing (auto-detected via `where`/`which`)
+  - Install: `winget install -e --id Gyan.FFmpeg` (Windows)
+  - Install: `brew install ffmpeg` (macOS)
+  - Install: `sudo apt install ffmpeg` (Linux)
+- **ONNX Model** — AI upscaling (optional)
+  - Download: `realesrgan-x4plus.onnx` to `./models/` directory
+  - Or let CRUSH download it automatically on first use
+
+## CLI Commands
+
+### Analyse Directory
+```bash
+crush analyse .                    # Analyse current directory
+crush analyse ./images --json      # JSON output for scripting
 ```
 
----
+### Direct Mode (No TUI)
+```bash
+# Compress images to WebP
+crush -i ./images -f webp -q 85
 
-## ✦ v2.4.0 Full Release Notes
+# Convert videos to MP4
+crush -i ./videos -f mp4 -q 90
 
-See [CHANGELOG.md](CHANGELOG.md) for the complete history.
+# Extract audio from video
+crush -i ./videos -f mp3 --type video
 
-## ✦ v2.4.0 — What's New
+# Dry run (preview without processing)
+crush -i ./images -f webp --dry-run
 
-### 🆕 Favicon Generator
-Generate 16×16 and 32×32 SVG favicons from any image — right from the interactive menu. Uses ffmpeg to resize and embeds the result as base64 inline SVG.
+# Custom quality
+crush -i ./images -f webp -q 95
 
-### 🎬 Dramatically Better Video Quality
-- **CRF 15 at default q85** (was CRF 21) — eliminates blocky artifacts
-- **`-c:a copy`** preserves original audio during in-place compression (no more re-encoding to 128k AAC)
-- **`-map a:0`** ensures full audio duration when extracting (no more truncated audio)
-- **192k AAC** for format conversions (was 128k) — noticeably clearer audio
+# Lossless mode
+crush -i ./images --lossless
 
-### 🔧 Bug Fixes
-- **Flags after path** — `crush ./dir/ -f webp -q 90` now works correctly
-- **Windows rename** — `os.Remove` before rename fixes "Access is denied"
-- **CLI audio extraction** — `crush . -f mp3` now works on video files
-- **`--help` cleanup** — exits cleanly without spurious error messages
-- **Lossless webm** — now uses libopus (was incompatible AAC)
-- **HTTP timeout** — update check no longer hangs on slow networks
-- **Bare paths** — `crush ./dir/` enters interactive mode (not direct)
+# Verbose output
+crush -i ./images -f webp -v
 
----
+# Skip backup
+crush -i ./images -f webp --no-backup
 
-### v2.3.0 — `promptui` → `charmbracelet/huh`
-
-CRUSH v2.3.0 replaces the old `promptui` library with [`huh`](https://github.com/charmbracelet/huh) (built on Bubble Tea):
-
-- ✅ **Arrow-key menus work on ALL terminals** — Windows cmd, PowerShell, Windows Terminal, Linux, macOS
-- ✅ **No more silent "Goodbye!"** — the old library failed silently on some Windows terminals
-- ✅ **Numbered fallback** — if the interactive menu fails for any reason, falls back to `1), 2), 3)...` number input
-
----
-
-## ✦ GitHub releases
-
-| File | Description |
-|------|-------------|
-| `crush_windows_amd64.zip` | Windows x86_64 binary + install script |
-| `crush_linux_amd64.tar.gz` | Linux x86_64 binary |
-| `crush_darwin_amd64.tar.gz` | macOS Intel binary |
-| `crush_darwin_arm64.tar.gz` | macOS Apple Silicon binary |
-
-Create a release with any of these methods:
-
-```powershell
-# Tag and push
-git tag v2.4.0
-git push origin v2.4.0
-
-# GitHub CLI
-gh release create v2.4.0 ./crush.exe --title "v2.4.0" --notes "See CHANGELOG.md"
+# Custom backup directory
+crush -i ./images -f webp --backup-dir ./my-backups
 ```
 
----
+### Management
+```bash
+crush install                      # Install crush globally + add to PATH
+crush setup                        # Doctor + auto-fix (install FFmpeg/model, fix PATH)
+crush check-deps                   # Same as setup
+crush uninstall                    # Remove crush + all data (models, backups, PATH)
+crush update                       # Check GitHub for updates + auto-fix setup
+crush -v / --version / version     # Print version
+```
 
-<div align="center">
-  <p>
-    <strong>✦ Developed by <a href="https://github.com/AliHamza-Coder">Ali Hamza Coder</a> ✦</strong>
-  </p>
-  <p>
-    <sub>MIT License — free to use, modify, distribute</sub>
-  </p>
-</div>
+### Setup & Auto-Fix (like `flutter doctor`)
+
+`crush setup` checks everything. If something is missing it asks
+`[Y/n]` and installs it automatically on `Y` or `Enter`:
+
+| Check | If missing |
+|-------|-----------|
+| FFmpeg (video/audio) | Installs via winget / brew / apt |
+| Rust Native (images) | Always built-in |
+| ONNX AI model (4x upscale) | Downloads Real-ESRGAN (~64MB) to `%LOCALAPPDATA%\crush\models\` |
+| Global install (PATH) | Installs to `~/Crush` + adds to PATH |
+
+Data locations:
+- **Install dir**: `~/Crush` (binary + launcher)
+- **Data dir**: `%LOCALAPPDATA%\crush` (models, backups, settings)
+
+`crush uninstall` removes everything — install dir, data dir, models,
+backups, PATH entries — and deletes the running binary on exit.
+
+
+## TUI Controls
+
+### Navigation
+| Key | Panel | Action |
+|-----|-------|--------|
+| `↑↓` / `jk` | All | Navigate items |
+| `Enter` | Menu | Execute action |
+| `Space` | Files | Toggle selection |
+| `Tab` | All | Switch panel / back |
+| `L` | Quality | Toggle lossless |
+| `0-9` | Quality | Custom quality input |
+| `c` | Queue | Cancel processing |
+| `x` | Queue | Clear queue |
+| `q` / `Esc` | All | Quit / back |
+| Mouse click | All | Select item |
+| Scroll wheel | All | Navigate up/down |
+
+### Panels
+- **Menu**: Choose action (Compress/Convert/Extract)
+- **Files**: Browse and select files
+- **Quality**: Select quality preset (100/90/85/75/60/Lossless/Custom)
+- **Format**: Choose target format
+- **Queue**: Live processing progress with status
+
+### Quality Presets
+
+#### Images
+| Quality | Label | Description |
+|---------|-------|-------------|
+| 100% | Maximum | Best quality, largest file |
+| 90% | High | Slightly larger |
+| 85% | Balanced ★ | Good quality, ~50-70% smaller |
+| 75% | Smaller | Slightly lower quality |
+| 60% | Compact | Good for web sharing |
+| Lossless | Original | Original quality preserved |
+
+#### Videos
+| Quality | Label | Description |
+|---------|-------|-------------|
+| 100% | Maximum | CRF 18 — near-lossless, largest |
+| 90% | High | CRF 20 — high quality |
+| 85% | Balanced ★ | CRF 23 — good quality, ~50% smaller |
+| 75% | Smaller | CRF 28 — smaller, some quality loss |
+| 60% | Compact | CRF 32 — very small, lower quality |
+
+#### Audio
+| Quality | Label | Description |
+|---------|-------|-------------|
+| 100% | Maximum | VBR ~320kbps — best quality |
+| 90% | High | VBR ~256kbps — high quality |
+| 85% | Balanced ★ | VBR ~192kbps — excellent, recommended |
+| 75% | Smaller | VBR ~160kbps — smaller file |
+| 60% | Compact | VBR ~128kbps — good for podcasts |
+
+## Format Support
+
+### Images
+| Format | Compress | Convert | Engine |
+|--------|----------|---------|--------|
+| WebP | ✓ | ✓ | Native / FFmpeg |
+| AVIF | ✓ | ✓ | Native / FFmpeg |
+| PNG | ✓ | ✓ | Native / FFmpeg |
+| JPG/JPEG | ✓ | ✓ | Native / FFmpeg |
+| BMP | ✓ | ✓ | Native / FFmpeg |
+| GIF | — | ✓ | FFmpeg |
+
+### Videos
+| Format | Compress | Convert | Engine |
+|--------|----------|---------|--------|
+| MP4 | ✓ | ✓ | FFmpeg |
+| WebM | ✓ | ✓ | FFmpeg |
+| MKV | ✓ | ✓ | FFmpeg |
+| MOV | ✓ | ✓ | FFmpeg |
+| AVI | ✓ | ✓ | FFmpeg |
+
+### Audio
+| Format | Compress | Convert | Extract | Engine |
+|--------|----------|---------|---------|--------|
+| MP3 | ✓ | ✓ | ✓ | FFmpeg |
+| FLAC | ✓ | ✓ | ✓ | FFmpeg |
+| OGG | ✓ | ✓ | ✓ | FFmpeg |
+| WAV | ✓ | ✓ | ✓ | FFmpeg |
+| AAC | ✓ | ✓ | ✓ | FFmpeg |
+| OPUS | ✓ | ✓ | ✓ | FFmpeg |
+| M4A | ✓ | ✓ | ✓ | FFmpeg |
+| ALAC | ✓ | ✓ | ✓ | FFmpeg |
+
+## Processing Engines
+
+### FFmpeg Engine
+- **Used for**: Video/audio processing, all format conversions
+- **Requires**: FFmpeg installed and in PATH
+- **Auto-detected**: Yes, via `where`/`which`
+
+### Native Rust Engine
+- **Used for**: Image compression (WebP, AVIF, PNG, JPG, BMP)
+- **Requires**: Nothing extra — always available
+- **Benefits**: No external dependencies, fast, memory-safe
+
+### ONNX AI Engine
+- **Used for**: AI-powered 4x upscaling (Real-ESRGAN)
+- **Requires**: ONNX Runtime + `realesrgan-x4plus.onnx` model
+- **Model**: Auto-downloaded on first use (~65MB)
+
+## Project Structure
+
+```
+F:\Crush\
+├── Cargo.toml                    # Workspace root
+├── ARCHITECTURE_V3.md            # Architecture docs
+├── AGENTS.md                     # Development guide
+├── README.md                     # This file
+└── crates/
+    ├── crush-core/               # Core library
+    │   └── src/
+    │       ├── lib.rs            # VERSION constant
+    │       ├── core/
+    │       │   ├── mod.rs
+    │       │   ├── error.rs      # CrushError enum
+    │       │   ├── config.rs     # Config, find_ffmpeg()
+    │       │   ├── fileutil.rs   # FileType, FileInfo, scan, filter
+    │       │   ├── queue.rs      # TaskQueue, Task, TaskType
+    │       │   ├── backup.rs     # BackupManager
+    │       │   └── deps.rs       # Dependency checker, install, update
+    │       └── engine/
+    │           ├── mod.rs        # select_engine()
+    │           ├── ffmpeg.rs     # FFmpeg subprocess engine
+    │           ├── native.rs     # Pure Rust image encoding
+    │           └── ai_upscale.rs # ONNX Real-ESRGAN
+    └── crush-cli/                # CLI + TUI binary
+        └── src/
+            ├── main.rs           # Entry point
+            ├── cli.rs            # Clap CLI commands
+            └── tui/
+                ├── mod.rs        # Event loop + mouse handling
+                ├── app.rs        # App state + business logic
+                └── ui.rs         # Ratatui rendering
+```
+
+## Testing
+
+### Test Files
+- `F:\Crush\Images test\` — 3 PNG files (2.4MB, 2.2MB, 2.2MB)
+- `F:\Crush\video test\` — 1 MP4 file (29MB)
+
+### Test Results
+| Test | Input | Output | Size Reduction |
+|------|-------|--------|----------------|
+| PNG→WebP (q85) | 1.png (2.4MB) | 1.webp (200KB) | 92% |
+| PNG→JPG (q85) | 1.png (2.4MB) | 1.jpg (185KB) | 92% |
+| Video→MP3 | video.mp4 (29MB) | audio.mp3 (386KB) | 99% |
+| Dry run | All | Shows what would happen | — |
+| Check deps | — | FFmpeg ✓, ONNX ✗, Native ✓ | — |
+
+## License
+
+MIT
+
+## Credits
+
+- [Ratatui](https://ratatui.rs/) — Terminal UI framework
+- [Crossterm](https://crossterm.rs/) — Terminal manipulation
+- [image-rs](https://github.com/image-rs/image) — Image processing
+- [webp](https://github.com/nicholasgasior/webp) — WebP encoding
+- [ort](https://github.com/pyke/ort) — ONNX Runtime bindings
+- [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) — AI upscaling model

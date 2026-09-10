@@ -1,0 +1,21 @@
+[package]
+name = "crush-core"
+version = "3.0.0"
+edition = "2021"
+description = "Multimedia processing core — FFmpeg, Native Image, AI Upscale engines"
+
+[dependencies]
+image = { version = "0.25", features = ["webp", "avif", "png", "jpeg"] }
+webp = "0.3"
+ort = { version = "2.0.0-rc.13", default-features = false, features = ["load-dynamic", "ndarray"] }
+tokio = { version = "1", features = ["full"] }
+thiserror = "2"
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = "0.4"
+which = "7"
+async-trait = "0.1"
+reqwest = { version = "0.12", features = ["blocking", "json"] }
+dirs = "5"
+zip = { version = "2", default-features = false, features = ["deflate"] }

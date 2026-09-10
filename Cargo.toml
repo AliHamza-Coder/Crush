@@ -1,0 +1,3 @@
+[workspace]
+members = ["crates/crush-core", "crates/crush-cli"]
+resolver = "2"

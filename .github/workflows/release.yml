@@ -1,0 +1,119 @@
+name: Release
+
+# Triggers ONLY on tag push (created by version-gate.yml) or manual dispatch.
+# Never add `push: branches: [main]` here — see references/common-patterns.md rule 4.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  # ── Build + test on each platform ──
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: crush-windows-x64.zip
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: crush-linux-x64.tar.gz
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Cargo deps
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './crates/crush-cli -> target'
+
+      # See references/common-patterns.md rule 7 — lint and test before build.
+      - name: Lint and test
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --workspace -- -D warnings
+          cargo test --workspace
+
+      - name: Build release binary
+        run: cargo build --release --workspace
+
+      # ── Windows packaging ──
+      - name: Package Windows binary
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "target/release/crush.exe" -DestinationPath ${{ matrix.archive }}
+
+      # ── Linux packaging ──
+      - name: Package Linux binary
+        if: matrix.os == 'ubuntu-latest'
+        run: tar -czf ${{ matrix.archive }} -C target/release crush
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.archive }}
+          path: ${{ matrix.archive }}
+          retention-days: 1
+
+  # ── Create release after all builds succeed ──
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # See references/common-patterns.md rules 1 and 9.
+      - name: Parse release checklist
+        id: checklist
+        run: |
+          python .github/scripts/parse_checklist.py --expect-version "${GITHUB_REF_NAME#v}" --write-body RELEASE_BODY.txt
+
+      - name: Load release body
+        id: body
+        run: |
+          {
+            echo 'content<<EOF'
+            cat RELEASE_BODY.txt
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: CRUSH ${{ github.ref_name }}
+          body: ${{ steps.body.outputs.content }}
+          draft: false
+          prerelease: false
+          files: artifacts/*

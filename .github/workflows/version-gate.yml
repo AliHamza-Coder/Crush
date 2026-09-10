@@ -1,0 +1,83 @@
+name: Version Gate
+
+# Runs on every push to main. Its only job: decide whether the version has
+# actually changed since the last real GitHub Release, and if so, create and
+# push the tag that triggers release.yml. It never builds or publishes anything
+# itself — see references/common-patterns.md rule 4 for why this must stay split
+# from release.yml.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # Reads the app's manifest version and cross-checks it against the
+      # top changelog entry in RELEASE_CHECKLIST.md — these must agree.
+      # See references/common-patterns.md rules 1 and 9.
+      - name: Extract current version
+        id: current
+        run: |
+          VERSION=$(python .github/scripts/extract_version.py)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Extract checklist entry
+        id: checklist
+        run: |
+          python .github/scripts/parse_checklist.py --expect-version "${{ steps.current.outputs.version }}"
+
+      # See references/common-patterns.md rule 2 — the last released version
+      # always comes from the API, never from a committed state file.
+      - name: Get latest released version
+        id: latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST=$(gh release view --json tagName -q .tagName 2>/dev/null | sed 's/^v//' || echo "0.0.0")
+          echo "version=$LATEST" >> "$GITHUB_OUTPUT"
+
+      - name: Compare versions
+        id: compare
+        run: |
+          RESULT=$(python .github/scripts/semver_compare.py "${{ steps.current.outputs.version }}" "${{ steps.latest.outputs.version }}")
+          echo "result=$RESULT" >> "$GITHUB_OUTPUT"
+
+      # See references/common-patterns.md rule 3 for what each branch means
+      # and why current < latest is a hard failure rather than a silent no-op.
+      - name: Handle version regression
+        if: steps.compare.outputs.result == 'lt'
+        run: |
+          echo "::error::Manifest version (${{ steps.current.outputs.version }}) is lower than the last release (${{ steps.latest.outputs.version }}). This looks like a rollback or a stale branch merge — refusing to tag."
+          exit 1
+
+      - name: No version change — skip
+        if: steps.compare.outputs.result == 'eq'
+        run: echo "Version unchanged since v${{ steps.latest.outputs.version }}, skipping."
+
+      - name: Create and push tag
+        if: steps.compare.outputs.result == 'gt'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.current.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v$VERSION"
+          git push origin "v$VERSION"
+          echo "Tagged v$VERSION — release.yml will take it from here."
