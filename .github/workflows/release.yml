@@ -27,7 +27,15 @@ jobs:
       - name: Build
         run: cargo build --release --workspace
 
-      - name: Package
+      - name: Install NSIS
+        run: choco install nsis -y
+
+      - name: Build Installer
+        run: |
+          cd installer/windows
+          & "C:\Program Files (x86)\NSIS\makensis.exe" crush.nsi
+
+      - name: Package Portable
         shell: pwsh
         run: |
           $version = "${GITHUB_REF_NAME#v}"
@@ -35,24 +43,15 @@ jobs:
           New-Item -ItemType Directory -Path $dir -Force
           Copy-Item "target/release/crush.exe" "$dir/"
           Copy-Item "README.md" "$dir/"
-          @"
-          CRUSH v$version - Windows x64
-          
-          Install:
-          1. Extract this folder
-          2. Add to PATH or run crush.exe directly
-          
-          Usage:
-          crush.exe analyse .
-          crush.exe -i ./images -f webp -q 85
-          "@ | Set-Content "$dir/INSTALL.txt"
           Compress-Archive -Path $dir -DestinationPath "$dir.zip"
-          
+
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: windows-x64
-          path: crush-*.zip
+          name: windows
+          path: |
+            crush-setup.exe
+            crush-*.zip
 
   build-linux:
     runs-on: ubuntu-latest
@@ -60,7 +59,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install system dependencies
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libwayland-dev libxkbcommon-dev libgtk-3-dev
@@ -83,16 +82,6 @@ jobs:
           mkdir -p "$DIR"
           cp target/release/crush "$DIR/"
           cp README.md "$DIR/"
-          cat > "$DIR/INSTALL.txt" << 'EOF'
-          CRUSH - Linux x64
-          
-          Install:
-          sudo cp crush /usr/local/bin/
-          
-          Usage:
-          crush analyse .
-          crush -i ./images -f webp -q 85
-          EOF
           tar -czf "$DIR.tar.gz" "$DIR"
 
       - name: Package deb
@@ -113,13 +102,46 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: linux-x64
+          name: linux
           path: |
             crush-*-linux-x64.tar.gz
             crush_*.deb
 
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './crates/crush-cli -> target'
+
+      - name: Build
+        run: cargo build --release --workspace
+
+      - name: Package
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ARCH=$(uname -m)
+          DIR="crush-${VERSION}-macos-${ARCH}"
+          mkdir -p "$DIR"
+          cp target/release/crush "$DIR/"
+          cp README.md "$DIR/"
+          tar -czf "$DIR.tar.gz" "$DIR"
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: crush-*-macos-*.tar.gz
+
   publish:
-    needs: [build-windows, build-linux]
+    needs: [build-windows, build-linux, build-macos]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -132,7 +154,6 @@ jobs:
           merge-multiple: true
 
       - name: Extract changelog
-        id: changelog
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           python .github/scripts/parse_checklist.py --expect-version "$VERSION" --write-body RELEASE_BODY.txt

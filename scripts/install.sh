@@ -5,7 +5,7 @@
 set -e
 
 REPO="AliHamza-Coder/Crush"
-INSTALL_DIR="$HOME/.crush"
+INSTALL_DIR="$HOME/.local/bin"
 
 echo ""
 echo "  Installing CRUSH..."
@@ -37,8 +37,9 @@ case "$OS" in
 esac
 
 # Get latest version
-VERSION=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name"' | sed 's/.*"v\([^"]*\)".*/\1/')
-ASSET_URL=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" | grep -o "https://[^\"]*$ASSET_PATTERN")
+LATEST=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest")
+VERSION=$(echo "$LATEST" | grep '"tag_name"' | sed 's/.*"v\([^"]*\)".*/\1/')
+ASSET_URL=$(echo "$LATEST" | grep -o "https://[^\"]*$ASSET_PATTERN" | head -1)
 
 if [ -z "$ASSET_URL" ]; then
     echo "  Error: No build found for $OS $ARCH"
@@ -49,8 +50,9 @@ echo "  Downloading v$VERSION..."
 mkdir -p "$INSTALL_DIR"
 curl -fsSL "$ASSET_URL" | tar xz -C "$INSTALL_DIR" --strip-components=1
 
-# Add to PATH
+# Add to PATH if needed
 if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
+    mkdir -p "$HOME/.local"
     echo "export PATH=\"\$PATH:$INSTALL_DIR\"" >> "$HOME/.bashrc"
     echo "export PATH=\"\$PATH:$INSTALL_DIR\"" >> "$HOME/.zshrc" 2>/dev/null || true
     export PATH="$PATH:$INSTALL_DIR"
