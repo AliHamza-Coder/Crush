@@ -1,11 +1,17 @@
-use std::path::Path;
 use anyhow::Result;
 use image::{DynamicImage, ImageEncoder};
+use std::path::Path;
 
 use crate::core::queue::{Task, TaskStatus, TaskType};
 
 #[derive(Clone)]
 pub struct NativeEngine;
+
+impl Default for NativeEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl NativeEngine {
     pub fn new() -> Self {

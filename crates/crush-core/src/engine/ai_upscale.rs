@@ -1,12 +1,12 @@
-use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
 use anyhow::Result;
-use image::{DynamicImage, GenericImageView, RgbImage, Rgb};
+use image::{DynamicImage, GenericImageView, Rgb, RgbImage};
 use ort::session::Session;
 use ort::value::Tensor;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 
-use crate::core::queue::{Task, TaskStatus, TaskType};
 use crate::core::deps;
+use crate::core::queue::{Task, TaskStatus, TaskType};
 
 #[derive(Clone)]
 pub struct AiUpscaleEngine {
@@ -18,7 +18,11 @@ impl AiUpscaleEngine {
     pub fn new(model_dir: &Path) -> Self {
         let model_path = model_dir.join("realesrgan-x4plus.onnx");
         Self {
-            model_path: if model_path.exists() { Some(model_path) } else { None },
+            model_path: if model_path.exists() {
+                Some(model_path)
+            } else {
+                None
+            },
             session: Arc::new(Mutex::new(None)),
         }
     }
@@ -42,16 +46,21 @@ impl AiUpscaleEngine {
 
     /// Lazily initialise the ONNX Runtime session on first use.
     fn ensure_session(&self) -> Result<Arc<Mutex<Session>>> {
-        let model_path = self.model_path.as_ref()
-            .ok_or_else(|| anyhow::anyhow!("AI model not found. Run `crush setup` to download it."))?;
+        let model_path = self.model_path.as_ref().ok_or_else(|| {
+            anyhow::anyhow!("AI model not found. Run `crush setup` to download it.")
+        })?;
 
         // Only initialise ort when we have a trusted runtime dll. Point ort at
         // it so a random onnxruntime.dll in the cwd can never be picked up.
-        deps::resolve_onnxruntime_dll()
-            .ok_or_else(|| anyhow::anyhow!("ONNX Runtime not found. Run `crush setup` to install it."))?;
+        deps::resolve_onnxruntime_dll().ok_or_else(|| {
+            anyhow::anyhow!("ONNX Runtime not found. Run `crush setup` to install it.")
+        })?;
         deps::prepare_ort();
 
-        let mut slot = self.session.lock().map_err(|e| anyhow::anyhow!("Lock error: {}", e))?;
+        let mut slot = self
+            .session
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Lock error: {}", e))?;
         if slot.is_none() {
             let session = Self::load_model(model_path)?;
             *slot = Some(Arc::new(Mutex::new(session)));
@@ -83,7 +92,9 @@ impl AiUpscaleEngine {
         let mut upscaled_tiles = Vec::new();
 
         for (i, tile) in tiles.iter().enumerate() {
-            let mut session = session_arc.lock().map_err(|e| anyhow::anyhow!("Lock error: {}", e))?;
+            let mut session = session_arc
+                .lock()
+                .map_err(|e| anyhow::anyhow!("Lock error: {}", e))?;
             let upscaled = self.upscale_tile(&mut session, tile)?;
             drop(session);
             upscaled_tiles.push(upscaled);
@@ -117,11 +128,21 @@ impl AiUpscaleEngine {
                         data.extend_from_slice(&pixel.0);
                     }
                 }
-                tiles.push(Tile { x, y, width: tw, height: th, data });
-                if x + tile_size >= w { break; }
+                tiles.push(Tile {
+                    x,
+                    y,
+                    width: tw,
+                    height: th,
+                    data,
+                });
+                if x + tile_size >= w {
+                    break;
+                }
                 x += step;
             }
-            if y + tile_size >= h { break; }
+            if y + tile_size >= h {
+                break;
+            }
             y += step;
         }
         tiles
@@ -147,11 +168,18 @@ impl AiUpscaleEngine {
         Ok(data.to_vec())
     }
 
-    fn stitch_tiles(&self, tiles: &[Vec<f32>], out_w: u32, out_h: u32, tile_size: u32, scaled_overlap: u32) -> Result<DynamicImage> {
+    fn stitch_tiles(
+        &self,
+        tiles: &[Vec<f32>],
+        out_w: u32,
+        out_h: u32,
+        tile_size: u32,
+        scaled_overlap: u32,
+    ) -> Result<DynamicImage> {
         let mut output = vec![0.0f32; (out_w * out_h * 3) as usize];
         let mut weight = vec![0.0f32; (out_w * out_h) as usize];
         let step = tile_size.saturating_sub(scaled_overlap);
-        let tiles_x = (out_w + step - 1) / step;
+        let tiles_x = out_w.div_ceil(step);
 
         for (i, tile_data) in tiles.iter().enumerate() {
             let ty = (i as u32 / tiles_x) * step;

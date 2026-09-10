@@ -1,12 +1,12 @@
-use std::path::PathBuf;
-use crush_core::core::config;
-use crush_core::core::fileutil::{self, FileInfo, AnalyseStats};
-use crush_core::core::queue::{TaskQueue, QueueState, TaskType, Engine};
 use crush_core::core::backup::BackupManager;
+use crush_core::core::config;
+use crush_core::core::fileutil::{self, AnalyseStats, FileInfo};
+use crush_core::core::queue::{Engine, QueueState, TaskQueue, TaskType};
+use crush_core::engine;
+use crush_core::engine::ai_upscale::AiUpscaleEngine;
 use crush_core::engine::ffmpeg::FfmpegEngine;
 use crush_core::engine::native::NativeEngine;
-use crush_core::engine::ai_upscale::AiUpscaleEngine;
-use crush_core::engine;
+use std::path::PathBuf;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Panel {
@@ -35,7 +35,15 @@ pub struct UiGeom {
 impl Panel {
     #[allow(dead_code)]
     pub fn all() -> &'static [Panel] {
-        &[Panel::Menu, Panel::Files, Panel::Quality, Panel::Format, Panel::Queue, Panel::QualitySubmenu, Panel::BackupConfirm]
+        &[
+            Panel::Menu,
+            Panel::Files,
+            Panel::Quality,
+            Panel::Format,
+            Panel::Queue,
+            Panel::QualitySubmenu,
+            Panel::BackupConfirm,
+        ]
     }
 }
 
@@ -54,7 +62,9 @@ pub enum SubmenuFlow {
 
 impl SubmenuFlow {
     #[allow(dead_code)]
-    pub fn is_none(&self) -> bool { matches!(self, SubmenuFlow::None) }
+    pub fn is_none(&self) -> bool {
+        matches!(self, SubmenuFlow::None)
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -265,7 +275,11 @@ impl App {
 
     pub fn prev_menu(&mut self) {
         let len = Self::menu_items().len();
-        self.menu_idx = if self.menu_idx == 0 { len - 1 } else { self.menu_idx - 1 };
+        self.menu_idx = if self.menu_idx == 0 {
+            len - 1
+        } else {
+            self.menu_idx - 1
+        };
     }
 
     pub fn next_file(&mut self) {
@@ -278,7 +292,11 @@ impl App {
     pub fn prev_file(&mut self) {
         let len = self.get_filtered_files().len();
         if len > 0 {
-            self.selected_file = if self.selected_file == 0 { len - 1 } else { self.selected_file - 1 };
+            self.selected_file = if self.selected_file == 0 {
+                len - 1
+            } else {
+                self.selected_file - 1
+            };
         }
     }
 
@@ -307,7 +325,11 @@ impl App {
     }
 
     pub fn prev_quality(&mut self) {
-        self.quality_idx = if self.quality_idx == 0 { 5 } else { self.quality_idx - 1 };
+        self.quality_idx = if self.quality_idx == 0 {
+            5
+        } else {
+            self.quality_idx - 1
+        };
         self.quality = match self.quality_idx {
             0 => 100,
             1 => 90,
@@ -331,27 +353,56 @@ impl App {
 
     pub fn prev_format(&mut self) {
         let formats = self.available_formats();
-        self.format_idx = if self.format_idx == 0 { formats.len() - 1 } else { self.format_idx - 1 };
+        self.format_idx = if self.format_idx == 0 {
+            formats.len() - 1
+        } else {
+            self.format_idx - 1
+        };
         self.format = formats[self.format_idx].clone();
     }
 
     pub fn available_formats(&self) -> Vec<String> {
-        let has_image = self.files.iter().any(|f| f.file_type == fileutil::FileType::Image);
-        let has_video = self.files.iter().any(|f| f.file_type == fileutil::FileType::Video);
-        let has_audio = self.files.iter().any(|f| f.file_type == fileutil::FileType::Audio);
+        let has_image = self
+            .files
+            .iter()
+            .any(|f| f.file_type == fileutil::FileType::Image);
+        let has_video = self
+            .files
+            .iter()
+            .any(|f| f.file_type == fileutil::FileType::Video);
+        let has_audio = self
+            .files
+            .iter()
+            .any(|f| f.file_type == fileutil::FileType::Audio);
 
         let mut formats = Vec::new();
         if has_image {
-            formats.extend(["webp", "avif", "png", "jpg", "bmp"].iter().map(|s| s.to_string()));
+            formats.extend(
+                ["webp", "avif", "png", "jpg", "bmp"]
+                    .iter()
+                    .map(|s| s.to_string()),
+            );
         }
         if has_video {
-            formats.extend(["mp4", "webm", "mkv", "mov", "avi"].iter().map(|s| s.to_string()));
+            formats.extend(
+                ["mp4", "webm", "mkv", "mov", "avi"]
+                    .iter()
+                    .map(|s| s.to_string()),
+            );
         }
         if has_audio {
-            formats.extend(["mp3", "flac", "ogg", "wav", "aac", "opus", "m4a", "alac"].iter().map(|s| s.to_string()));
+            formats.extend(
+                ["mp3", "flac", "ogg", "wav", "aac", "opus", "m4a", "alac"]
+                    .iter()
+                    .map(|s| s.to_string()),
+            );
         }
         if formats.is_empty() {
-            formats.extend(["webp", "avif", "png", "jpg", "mp4", "mp3"].iter().map(|s| s.to_string()));
+            formats.extend(
+                ["webp", "avif", "png", "jpg", "mp4", "mp3"]
+                    .iter()
+                    .map(|s| s.to_string()),
+            );
         }
         formats
     }
@@ -396,7 +447,8 @@ impl App {
 
     pub fn quality_submenu_items(filter: &str) -> Vec<String> {
         let opts = Self::quality_options_for(filter);
-        let mut items: Vec<String> = opts.iter()
+        let mut items: Vec<String> = opts
+            .iter()
             .map(|(q, label, desc)| format!("{:>3}% — {:<10} {}", q, label, desc))
             .collect();
         items.push("Lossless — original quality preserved".into());
@@ -458,7 +510,7 @@ impl App {
     }
 
     pub fn execute_menu_action(&mut self) -> anyhow::Result<()> {
-        let action = Self::menu_items()[self.menu_idx].clone();
+        let action = Self::menu_items()[self.menu_idx];
         match action {
             MenuAction::CompressAll => {
                 self.mode = ProcessMode::Compress;
@@ -534,7 +586,9 @@ impl App {
             }
             MenuAction::CheckDeps => {
                 self.deps_status = crush_core::core::deps::check_all();
-                self.status_msg = self.deps_status.iter()
+                self.status_msg = self
+                    .deps_status
+                    .iter()
                     .map(|d| format!("{}: {}", d.name, if d.available { "✓" } else { "✗" }))
                     .collect::<Vec<_>>()
                     .join("  |  ");
@@ -582,15 +636,23 @@ impl App {
         for part in trimmed.split(',') {
             let part = part.trim();
             if let Some((start_s, end_s)) = part.split_once('-') {
-                let start: usize = start_s.trim().parse().map_err(|_| anyhow::anyhow!("Invalid range: {}", part))?;
-                let end: usize = end_s.trim().parse().map_err(|_| anyhow::anyhow!("Invalid range: {}", part))?;
+                let start: usize = start_s
+                    .trim()
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid range: {}", part))?;
+                let end: usize = end_s
+                    .trim()
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid range: {}", part))?;
                 for f in &files {
                     if f.index >= start && f.index <= end {
                         self.selected_indices.push(f.index);
                     }
                 }
             } else {
-                let num: usize = part.parse().map_err(|_| anyhow::anyhow!("Invalid number: {}", part))?;
+                let num: usize = part
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid number: {}", part))?;
                 if let Some(f) = files.iter().find(|f| f.index == num) {
                     self.selected_indices.push(f.index);
                 }
@@ -605,7 +667,8 @@ impl App {
 
     pub fn start_processing(&mut self) -> anyhow::Result<()> {
         let files = if self.filter_type == "custom" {
-            self.files.iter()
+            self.files
+                .iter()
                 .filter(|f| self.selected_indices.contains(&f.index))
                 .cloned()
                 .collect::<Vec<_>>()
@@ -657,72 +720,125 @@ impl App {
                     "video" => {
                         if matches!(mode, ProcessMode::Convert) {
                             if is_audio_format(&format) {
-                                TaskType::AudioExtract { format: format.clone(), quality }
+                                TaskType::AudioExtract {
+                                    format: format.clone(),
+                                    quality,
+                                }
                             } else {
-                                TaskType::VideoConvert { target: format.clone(), quality }
+                                TaskType::VideoConvert {
+                                    target: format.clone(),
+                                    quality,
+                                }
                             }
                         } else {
-                            TaskType::VideoCompress { quality, format: format.clone() }
+                            TaskType::VideoCompress {
+                                quality,
+                                format: format.clone(),
+                            }
                         }
                     }
-                    "audio" => TaskType::AudioConvert { format: format.clone(), quality },
+                    "audio" => TaskType::AudioConvert {
+                        format: format.clone(),
+                        quality,
+                    },
                     "image" => {
                         if matches!(mode, ProcessMode::Convert) {
-                            TaskType::ImageConvert { target: format.clone(), quality }
+                            TaskType::ImageConvert {
+                                target: format.clone(),
+                                quality,
+                            }
                         } else {
-                            TaskType::ImageCompress { quality, format: format.clone() }
+                            TaskType::ImageCompress {
+                                quality,
+                                format: format.clone(),
+                            }
                         }
                     }
-                    "custom" => {
-                        match file.file_type {
-                            fileutil::FileType::Video => {
-                                if matches!(mode, ProcessMode::Convert) {
-                                    if is_audio_format(&format) {
-                                        TaskType::AudioExtract { format: format.clone(), quality }
-                                    } else {
-                                        TaskType::VideoConvert { target: format.clone(), quality }
-                                    }
-                                } else {
-                                    TaskType::VideoCompress { quality, format: format.clone() }
-                                }
-                            }
-                            fileutil::FileType::Image => {
-                                if matches!(mode, ProcessMode::Convert) {
-                                    TaskType::ImageConvert { target: format.clone(), quality }
-                                } else {
-                                    TaskType::ImageCompress { quality, format: format.clone() }
-                                }
-                            }
-                            fileutil::FileType::Audio => TaskType::AudioConvert { format: format.clone(), quality },
-                            _ => continue,
-                        }
-                    }
-                    _ => match file.file_type {
+                    "custom" => match file.file_type {
                         fileutil::FileType::Video => {
                             if matches!(mode, ProcessMode::Convert) {
                                 if is_audio_format(&format) {
-                                    TaskType::AudioExtract { format: format.clone(), quality }
+                                    TaskType::AudioExtract {
+                                        format: format.clone(),
+                                        quality,
+                                    }
                                 } else {
-                                    TaskType::VideoConvert { target: format.clone(), quality }
+                                    TaskType::VideoConvert {
+                                        target: format.clone(),
+                                        quality,
+                                    }
                                 }
                             } else {
-                                TaskType::VideoCompress { quality, format: format.clone() }
+                                TaskType::VideoCompress {
+                                    quality,
+                                    format: format.clone(),
+                                }
                             }
                         }
                         fileutil::FileType::Image => {
                             if matches!(mode, ProcessMode::Convert) {
-                                TaskType::ImageConvert { target: format.clone(), quality }
+                                TaskType::ImageConvert {
+                                    target: format.clone(),
+                                    quality,
+                                }
                             } else {
-                                TaskType::ImageCompress { quality, format: format.clone() }
+                                TaskType::ImageCompress {
+                                    quality,
+                                    format: format.clone(),
+                                }
                             }
                         }
-                        fileutil::FileType::Audio => TaskType::AudioConvert { format: format.clone(), quality },
+                        fileutil::FileType::Audio => TaskType::AudioConvert {
+                            format: format.clone(),
+                            quality,
+                        },
+                        _ => continue,
+                    },
+                    _ => match file.file_type {
+                        fileutil::FileType::Video => {
+                            if matches!(mode, ProcessMode::Convert) {
+                                if is_audio_format(&format) {
+                                    TaskType::AudioExtract {
+                                        format: format.clone(),
+                                        quality,
+                                    }
+                                } else {
+                                    TaskType::VideoConvert {
+                                        target: format.clone(),
+                                        quality,
+                                    }
+                                }
+                            } else {
+                                TaskType::VideoCompress {
+                                    quality,
+                                    format: format.clone(),
+                                }
+                            }
+                        }
+                        fileutil::FileType::Image => {
+                            if matches!(mode, ProcessMode::Convert) {
+                                TaskType::ImageConvert {
+                                    target: format.clone(),
+                                    quality,
+                                }
+                            } else {
+                                TaskType::ImageCompress {
+                                    quality,
+                                    format: format.clone(),
+                                }
+                            }
+                        }
+                        fileutil::FileType::Audio => TaskType::AudioConvert {
+                            format: format.clone(),
+                            quality,
+                        },
                         _ => continue,
                     },
                 };
 
                 let engine_type = engine::select_engine(&task_type, &file.ext);
-                let output_name = format!("{}.{}", fileutil::file_name_without_ext(&file.name), &format);
+                let output_name =
+                    format!("{}.{}", fileutil::file_name_without_ext(&file.name), format);
                 let output_path = dir.join(&output_name);
 
                 q.add_task(
@@ -733,7 +849,8 @@ impl App {
                     file.size_str.clone(),
                     task_type,
                     engine_type,
-                ).await;
+                )
+                .await;
             }
 
             let state = q.get_state().await;
@@ -745,7 +862,8 @@ impl App {
                 let output_path = std::path::Path::new(&task.output_path);
                 let same_file = input_path.canonicalize().ok() == output_path.canonicalize().ok();
                 if same_file {
-                    q.update_status(task.id, crush_core::core::queue::TaskStatus::Skipped).await;
+                    q.update_status(task.id, crush_core::core::queue::TaskStatus::Skipped)
+                        .await;
                     continue;
                 }
 
@@ -766,7 +884,8 @@ impl App {
                 } else {
                     // Engines update a local task copy; write status + progress
                     // back into the queue so the UI sees completion.
-                    q.update_status(task.id, crush_core::core::queue::TaskStatus::Completed).await;
+                    q.update_status(task.id, crush_core::core::queue::TaskStatus::Completed)
+                        .await;
                     q.update_progress(task.id, task.progress).await;
                 }
             }
@@ -776,7 +895,9 @@ impl App {
     }
 
     pub fn start_audio_extract(&mut self) -> anyhow::Result<()> {
-        let videos: Vec<FileInfo> = self.files.iter()
+        let videos: Vec<FileInfo> = self
+            .files
+            .iter()
             .filter(|f| f.file_type == fileutil::FileType::Video)
             .cloned()
             .collect();
@@ -800,8 +921,12 @@ impl App {
             q.start().await;
 
             for file in &videos {
-                let task_type = TaskType::AudioExtract { format: format.clone(), quality };
-                let output_name = format!("{}.{}", fileutil::file_name_without_ext(&file.name), &format);
+                let task_type = TaskType::AudioExtract {
+                    format: format.clone(),
+                    quality,
+                };
+                let output_name =
+                    format!("{}.{}", fileutil::file_name_without_ext(&file.name), format);
                 let output_path = dir.join(&output_name);
 
                 q.add_task(
@@ -812,7 +937,8 @@ impl App {
                     file.size_str.clone(),
                     task_type,
                     Engine::Ffmpeg,
-                ).await;
+                )
+                .await;
             }
 
             let state = q.get_state().await;
@@ -826,7 +952,8 @@ impl App {
                 if let Err(e) = result {
                     q.set_error(task.id, e.to_string()).await;
                 } else {
-                    q.update_status(task.id, crush_core::core::queue::TaskStatus::Completed).await;
+                    q.update_status(task.id, crush_core::core::queue::TaskStatus::Completed)
+                        .await;
                     q.update_progress(task.id, task.progress).await;
                 }
             }
@@ -854,7 +981,10 @@ impl App {
                 .and_then(|e| e.to_str())
                 .unwrap_or("no_extension")
                 .to_lowercase();
-            groups.entry(ext).or_default().push(entry.path().display().to_string());
+            groups
+                .entry(ext)
+                .or_default()
+                .push(entry.path().display().to_string());
         }
 
         let mut moved = 0;
@@ -864,10 +994,8 @@ impl App {
             for path in paths {
                 let src = std::path::Path::new(path);
                 let dst = folder.join(src.file_name().unwrap());
-                if !dst.exists() {
-                    if fs::rename(src, &dst).is_ok() {
-                        moved += 1;
-                    }
+                if !dst.exists() && fs::rename(src, &dst).is_ok() {
+                    moved += 1;
                 }
             }
         }
@@ -878,7 +1006,9 @@ impl App {
     }
 
     pub fn generate_favicon(&mut self) -> anyhow::Result<()> {
-        let images: Vec<&FileInfo> = self.files.iter()
+        let images: Vec<&FileInfo> = self
+            .files
+            .iter()
             .filter(|f| f.file_type == fileutil::FileType::Image)
             .collect();
 
@@ -897,12 +1027,22 @@ impl App {
                 let svg_out = out_dir.join(format!("favicon_{}x{}.svg", size, size));
 
                 let status = std::process::Command::new(ffmpeg_path)
-                    .args(["-i", &img.path, "-vf", &format!("scale={}:{}:flags=lanczos", size, size), "-y", &png_tmp.display().to_string()])
+                    .args([
+                        "-i",
+                        &img.path,
+                        "-vf",
+                        &format!("scale={}:{}:flags=lanczos", size, size),
+                        "-y",
+                        &png_tmp.display().to_string(),
+                    ])
                     .status()?;
 
                 if status.success() {
                     let png_data = std::fs::read(&png_tmp)?;
-                    let b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &png_data);
+                    let b64 = base64::Engine::encode(
+                        &base64::engine::general_purpose::STANDARD,
+                        &png_data,
+                    );
                     let svg = format!(
                         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{}\" height=\"{}\" viewBox=\"0 0 {} {}\">\n  <image width=\"{}\" height=\"{}\" href=\"data:image/png;base64,{}\"/>\n</svg>",
                         size, size, size, size, size, size, b64
@@ -926,7 +1066,9 @@ impl App {
 
     pub fn clear_queue(&mut self) {
         let queue = self.queue.clone();
-        tokio::spawn(async move { queue.clear().await; });
+        tokio::spawn(async move {
+            queue.clear().await;
+        });
         self.status_msg = "Queue cleared".into();
     }
 
@@ -941,8 +1083,13 @@ impl App {
                     let elapsed = self.elapsed_ms as f64 / 1000.0;
                     self.status_msg = format!(
                         "Done: {} OK, {} FAIL, {} SKIP in {:.1}s",
-                        state.completed, state.failed,
-                        state.tasks.iter().filter(|t| t.status == crush_core::core::queue::TaskStatus::Skipped).count(),
+                        state.completed,
+                        state.failed,
+                        state
+                            .tasks
+                            .iter()
+                            .filter(|t| t.status == crush_core::core::queue::TaskStatus::Skipped)
+                            .count(),
                         elapsed
                     );
                     print!("\x07");
@@ -954,7 +1101,8 @@ impl App {
 }
 
 fn is_audio_format(format: &str) -> bool {
-    matches!(format.to_lowercase().as_str(),
+    matches!(
+        format.to_lowercase().as_str(),
         "mp3" | "flac" | "ogg" | "wav" | "aac" | "opus" | "m4a" | "alac"
     )
 }
@@ -994,9 +1142,14 @@ mod tests {
         app.mode = ProcessMode::Compress;
         app.backup = false;
         app.scan().expect("scan");
-        assert_eq!(app.get_filtered_files().len(), 1, "should see the copied png");
+        assert_eq!(
+            app.get_filtered_files().len(),
+            1,
+            "should see the copied png"
+        );
 
-        app.start_processing().expect("start_processing must not panic");
+        app.start_processing()
+            .expect("start_processing must not panic");
 
         let mut done = false;
         for _ in 0..300 {

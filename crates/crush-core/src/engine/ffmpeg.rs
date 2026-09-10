@@ -1,6 +1,6 @@
+use anyhow::Result;
 use std::process::Stdio;
 use tokio::process::Command;
-use anyhow::Result;
 
 use crate::core::queue::{Task, TaskStatus, TaskType};
 
@@ -54,15 +54,30 @@ impl FfmpegEngine {
                 let crf = self.quality_to_crf(*quality);
                 match target.as_str() {
                     "webm" => {
-                        args.extend(["-c:v".into(), "libvpx-vp9".into(), "-crf".into(), crf.to_string()]);
+                        args.extend([
+                            "-c:v".into(),
+                            "libvpx-vp9".into(),
+                            "-crf".into(),
+                            crf.to_string(),
+                        ]);
                         args.extend(["-b:v".into(), "0".into()]);
-                        args.extend(["-c:a".into(), "libopus".into(), "-b:a".into(), "128k".into()]);
+                        args.extend([
+                            "-c:a".into(),
+                            "libopus".into(),
+                            "-b:a".into(),
+                            "128k".into(),
+                        ]);
                     }
                     "gif" => {
                         args.extend(["-vf".into(), "fps=10,scale=320:-1:flags=lanczos".into()]);
                     }
                     _ => {
-                        args.extend(["-c:v".into(), "libx264".into(), "-crf".into(), crf.to_string()]);
+                        args.extend([
+                            "-c:v".into(),
+                            "libx264".into(),
+                            "-crf".into(),
+                            crf.to_string(),
+                        ]);
                         args.extend(["-preset".into(), "fast".into()]);
                         args.extend(["-c:a".into(), "aac".into(), "-b:a".into(), "192k".into()]);
                         args.extend(["-movflags".into(), "+faststart".into()]);
@@ -95,24 +110,33 @@ impl FfmpegEngine {
     fn image_args(&self, format: &str, quality: u8) -> Vec<String> {
         match format {
             "webp" => vec![
-                "-c:v".into(), "libwebp".into(),
-                "-quality".into(), quality.to_string(),
-                "-compression_level".into(), "4".into(),
+                "-c:v".into(),
+                "libwebp".into(),
+                "-quality".into(),
+                quality.to_string(),
+                "-compression_level".into(),
+                "4".into(),
             ],
             "avif" => {
                 let crf = 20u16 + (100u16.saturating_sub(quality as u16)) * 43 / 100;
                 vec![
-                    "-c:v".into(), "libaom-av1".into(),
-                    "-crf".into(), crf.to_string(),
-                    "-b:v".into(), "0".into(),
-                    "-strict".into(), "experimental".into(),
+                    "-c:v".into(),
+                    "libaom-av1".into(),
+                    "-crf".into(),
+                    crf.to_string(),
+                    "-b:v".into(),
+                    "0".into(),
+                    "-strict".into(),
+                    "experimental".into(),
                 ]
             }
             "png" => {
                 let level = 9 - (quality / 11);
                 vec![
-                    "-c:v".into(), "png".into(),
-                    "-compression_level".into(), level.to_string(),
+                    "-c:v".into(),
+                    "png".into(),
+                    "-compression_level".into(),
+                    level.to_string(),
                 ]
             }
             "gif" => vec!["-vf".into(), "fps=10,scale=320:-1:flags=lanczos".into()],
@@ -124,29 +148,59 @@ impl FfmpegEngine {
         match format {
             "mp3" => {
                 let q = (100u16.saturating_sub(quality as u16)) * 9 / 100;
-                vec!["-c:a".into(), "libmp3lame".into(), "-q:a".into(), q.to_string()]
+                vec![
+                    "-c:a".into(),
+                    "libmp3lame".into(),
+                    "-q:a".into(),
+                    q.to_string(),
+                ]
             }
             "flac" => {
                 let level = 8 - (quality / 12);
-                vec!["-c:a".into(), "flac".into(), "-compression_level".into(), level.to_string()]
+                vec![
+                    "-c:a".into(),
+                    "flac".into(),
+                    "-compression_level".into(),
+                    level.to_string(),
+                ]
             }
             "aac" | "m4a" => {
                 let bitrate = 64 + (quality as u32 * 256 / 100);
-                vec!["-c:a".into(), "aac".into(), "-b:a".into(), format!("{}k", bitrate)]
+                vec![
+                    "-c:a".into(),
+                    "aac".into(),
+                    "-b:a".into(),
+                    format!("{}k", bitrate),
+                ]
             }
             "opus" => {
                 let bitrate = 32 + (quality as u32 * 128 / 100);
-                vec!["-c:a".into(), "libopus".into(), "-b:a".into(), format!("{}k", bitrate)]
+                vec![
+                    "-c:a".into(),
+                    "libopus".into(),
+                    "-b:a".into(),
+                    format!("{}k", bitrate),
+                ]
             }
             "ogg" => {
                 let q = (100u16.saturating_sub(quality as u16)) * 10 / 100;
-                vec!["-c:a".into(), "libvorbis".into(), "-q:a".into(), q.to_string()]
+                vec![
+                    "-c:a".into(),
+                    "libvorbis".into(),
+                    "-q:a".into(),
+                    q.to_string(),
+                ]
             }
             "wav" => vec![],
             "alac" => vec!["-c:a".into(), "alac".into()],
             _ => {
                 let q = (100u16.saturating_sub(quality as u16)) * 9 / 100;
-                vec!["-c:a".into(), "libmp3lame".into(), "-q:a".into(), q.to_string()]
+                vec![
+                    "-c:a".into(),
+                    "libmp3lame".into(),
+                    "-q:a".into(),
+                    q.to_string(),
+                ]
             }
         }
     }
@@ -179,6 +233,11 @@ impl FfmpegEngine {
                 return line.trim().to_string();
             }
         }
-        stderr.lines().last().unwrap_or("Unknown error").trim().to_string()
+        stderr
+            .lines()
+            .last()
+            .unwrap_or("Unknown error")
+            .trim()
+            .to_string()
     }
 }

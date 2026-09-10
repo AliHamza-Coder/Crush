@@ -23,9 +23,9 @@ impl BackupManager {
     }
 
     pub fn backup_file(&self, src: &Path) -> Result<PathBuf, std::io::Error> {
-        let file_name = src
-            .file_name()
-            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid file name"))?;
+        let file_name = src.file_name().ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid file name")
+        })?;
 
         let dst = self.backup_dir.join(file_name);
         fs::copy(src, &dst)?;
@@ -34,12 +34,11 @@ impl BackupManager {
 
     pub fn cleanup_if_empty(&self) {
         if self.backup_dir.exists() {
-            let _ = fs::read_dir(&self.backup_dir)
-                .map(|mut entries| {
-                    if entries.next().is_none() {
-                        fs::remove_dir(&self.backup_dir).ok();
-                    }
-                });
+            let _ = fs::read_dir(&self.backup_dir).map(|mut entries| {
+                if entries.next().is_none() {
+                    fs::remove_dir(&self.backup_dir).ok();
+                }
+            });
         }
     }
 

@@ -63,6 +63,12 @@ pub struct TaskQueue {
     start_time: Option<std::time::Instant>,
 }
 
+impl Default for TaskQueue {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TaskQueue {
     pub fn new() -> Self {
         Self {
@@ -71,6 +77,7 @@ impl TaskQueue {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn add_task(
         &self,
         input_path: String,
@@ -127,12 +134,25 @@ impl TaskQueue {
 
     pub async fn get_state(&self) -> QueueState {
         let tasks = self.tasks.read().await;
-        let completed = tasks.iter().filter(|t| t.status == TaskStatus::Completed).count();
-        let failed = tasks.iter().filter(|t| t.status == TaskStatus::Failed).count();
-        let running = tasks.iter().filter(|t| t.status == TaskStatus::Running).count();
-        let pending = tasks.iter().filter(|t| t.status == TaskStatus::Pending).count();
+        let completed = tasks
+            .iter()
+            .filter(|t| t.status == TaskStatus::Completed)
+            .count();
+        let failed = tasks
+            .iter()
+            .filter(|t| t.status == TaskStatus::Failed)
+            .count();
+        let running = tasks
+            .iter()
+            .filter(|t| t.status == TaskStatus::Running)
+            .count();
+        let pending = tasks
+            .iter()
+            .filter(|t| t.status == TaskStatus::Pending)
+            .count();
 
-        let elapsed_ms = self.start_time
+        let elapsed_ms = self
+            .start_time
             .map(|t| t.elapsed().as_millis() as u64)
             .unwrap_or(0);
 

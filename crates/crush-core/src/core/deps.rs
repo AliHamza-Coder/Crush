@@ -27,7 +27,7 @@ pub fn crush_install_dir() -> PathBuf {
 pub fn crush_data_dir() -> PathBuf {
     dirs::data_local_dir()
         .or_else(dirs::data_dir)
-        .unwrap_or_else(|| crush_install_dir())
+        .unwrap_or_else(crush_install_dir)
         .join("crush")
 }
 
@@ -46,7 +46,8 @@ pub fn onnx_model_path() -> PathBuf {
 /// opened terminal picks it up.
 pub fn is_installed_on_path() -> bool {
     let install_dir = crush_install_dir();
-    let has_files = install_dir.join("crush.exe").exists() || install_dir.join("crush.bat").exists();
+    let has_files =
+        install_dir.join("crush.exe").exists() || install_dir.join("crush.bat").exists();
     if !has_files {
         return false;
     }
@@ -60,12 +61,12 @@ pub fn is_installed_on_path() -> bool {
 // ---------------------------------------------------------------------------
 
 pub fn check_all() -> Vec<DepStatus> {
-    let mut deps = Vec::new();
-    deps.push(check_ffmpeg());
-    deps.push(check_onnx_model());
-    deps.push(check_onnxruntime());
-    deps.push(check_rust_native());
-    deps
+    vec![
+        check_ffmpeg(),
+        check_onnx_model(),
+        check_onnxruntime(),
+        check_rust_native(),
+    ]
 }
 
 pub fn check_ffmpeg() -> DepStatus {
@@ -154,7 +155,10 @@ pub fn resolve_onnxruntime_dll() -> Option<PathBuf> {
 /// be in the current directory. Safe to call repeatedly; no-op if not found.
 pub fn prepare_ort() {
     if let Some(dll) = resolve_onnxruntime_dll() {
-        if std::env::var("ORT_DYLIB_PATH").map(|v| v.trim().is_empty()).unwrap_or(true) {
+        if std::env::var("ORT_DYLIB_PATH")
+            .map(|v| v.trim().is_empty())
+            .unwrap_or(true)
+        {
             unsafe {
                 std::env::set_var("ORT_DYLIB_PATH", dll.display().to_string());
             }
@@ -216,12 +220,19 @@ pub fn install_onnxruntime() -> anyhow::Result<()> {
         .spawn()
     {
         let _ = child.wait();
-        downloaded = zip_path.exists() && zip_path.metadata().map(|m| m.len() > 1_000_000).unwrap_or(false);
+        downloaded = zip_path.exists()
+            && zip_path
+                .metadata()
+                .map(|m| m.len() > 1_000_000)
+                .unwrap_or(false);
     }
 
     if !downloaded {
         let client = reqwest::blocking::Client::new();
-        let resp = client.get(url).header("User-Agent", "crush-updater").send()?;
+        let resp = client
+            .get(url)
+            .header("User-Agent", "crush-updater")
+            .send()?;
         if !resp.status().is_success() {
             return Err(anyhow::anyhow!("Download failed: HTTP {}", resp.status()));
         }
@@ -229,7 +240,10 @@ pub fn install_onnxruntime() -> anyhow::Result<()> {
         std::fs::write(&zip_path, &bytes)?;
     }
 
-    let size_mb = zip_path.metadata().map(|m| m.len() as f64 / (1024.0 * 1024.0)).unwrap_or(0.0);
+    let size_mb = zip_path
+        .metadata()
+        .map(|m| m.len() as f64 / (1024.0 * 1024.0))
+        .unwrap_or(0.0);
     println!("  Downloaded {:.1} MB, extracting...", size_mb);
 
     if let Some(parent) = target.parent() {
@@ -271,7 +285,14 @@ pub fn install_ffmpeg() -> anyhow::Result<()> {
     if cfg!(target_os = "windows") {
         println!("\n  Installing FFmpeg via winget...");
         let status = Command::new("winget")
-            .args(["install", "-e", "--id", "Gyan.FFmpeg", "--accept-package-agreements", "--accept-source-agreements"])
+            .args([
+                "install",
+                "-e",
+                "--id",
+                "Gyan.FFmpeg",
+                "--accept-package-agreements",
+                "--accept-source-agreements",
+            ])
             .status();
         match status {
             Ok(s) if s.success() => {
@@ -279,8 +300,13 @@ pub fn install_ffmpeg() -> anyhow::Result<()> {
                 println!("  Restart your terminal to use it.");
                 Ok(())
             }
-            Ok(_) => Err(anyhow::anyhow!("winget install failed. Try manually:\n  winget install -e --id Gyan.FFmpeg")),
-            Err(e) => Err(anyhow::anyhow!("winget not available: {}. Install manually:\n  winget install -e --id Gyan.FFmpeg", e)),
+            Ok(_) => Err(anyhow::anyhow!(
+                "winget install failed. Try manually:\n  winget install -e --id Gyan.FFmpeg"
+            )),
+            Err(e) => Err(anyhow::anyhow!(
+                "winget not available: {}. Install manually:\n  winget install -e --id Gyan.FFmpeg",
+                e
+            )),
         }
     } else if cfg!(target_os = "macos") {
         println!("\n  Installing FFmpeg via brew...");
@@ -293,7 +319,9 @@ pub fn install_ffmpeg() -> anyhow::Result<()> {
         }
     } else {
         println!("\n  Installing FFmpeg via apt...");
-        let status = Command::new("sudo").args(["apt", "install", "-y", "ffmpeg"]).status()?;
+        let status = Command::new("sudo")
+            .args(["apt", "install", "-y", "ffmpeg"])
+            .status()?;
         if status.success() {
             println!("  ✓ FFmpeg installed successfully!");
             Ok(())
@@ -321,7 +349,8 @@ pub fn download_model() -> anyhow::Result<()> {
     let url = "https://media.axelera.ai/artifacts/model_cards/weights/image_enhancement/superresolution/RealESRGAN_x4plus.onnx";
     let client = reqwest::blocking::Client::new();
     println!("  From: {}", url);
-    let resp = client.get(url)
+    let resp = client
+        .get(url)
         .header("User-Agent", "crush-updater")
         .send()?;
 
@@ -337,7 +366,7 @@ pub fn download_model() -> anyhow::Result<()> {
     std::fs::write(&model_path, &bytes)?;
 
     let mb = bytes.len() as f64 / (1024.0 * 1024.0);
-    println!("  ✓ Model saved ({} MB): {}", format!("{:.1}", mb), model_path.display());
+    println!("  ✓ Model saved ({:.1} MB): {}", mb, model_path.display());
     if total > 0 {
         println!("  (expected ~{:.1} MB)", total as f64 / (1024.0 * 1024.0));
     }
@@ -360,7 +389,11 @@ pub fn add_to_path_windows(new_path: &Path) -> anyhow::Result<()> {
     let status = Command::new("powershell")
         .args(["-Command", &script])
         .status()?;
-    if status.success() { Ok(()) } else { Err(anyhow::anyhow!("Failed to add to PATH")) }
+    if status.success() {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!("Failed to add to PATH"))
+    }
 }
 
 pub fn remove_from_path_windows(remove_dir: &Path) -> anyhow::Result<()> {
@@ -373,7 +406,11 @@ pub fn remove_from_path_windows(remove_dir: &Path) -> anyhow::Result<()> {
     let status = Command::new("powershell")
         .args(["-Command", &script])
         .status()?;
-    if status.success() { Ok(()) } else { Err(anyhow::anyhow!("Failed to remove from PATH")) }
+    if status.success() {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!("Failed to remove from PATH"))
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -390,7 +427,8 @@ pub fn self_update() -> anyhow::Result<()> {
     println!("  Checking for updates...\n");
 
     let client = reqwest::blocking::Client::new();
-    let resp = client.get("https://api.github.com/repos/AliHamza-Coder/crush/releases/latest")
+    let resp = client
+        .get("https://api.github.com/repos/AliHamza-Coder/crush/releases/latest")
         .header("User-Agent", "crush-updater")
         .send();
 
@@ -423,15 +461,21 @@ pub fn self_update() -> anyhow::Result<()> {
         return Ok(());
     }
 
-    println!("\n  New version available: v{} → v{}", current_version, latest_version);
+    println!(
+        "\n  New version available: v{} → v{}",
+        current_version, latest_version
+    );
 
-    let download_url = json["assets"].as_array()
-        .and_then(|assets| assets.iter().find(|a| {
-            let name = a["name"].as_str().unwrap_or("");
-            cfg!(target_os = "windows") && name.ends_with(".exe")
-                || cfg!(target_os = "linux") && name.contains("linux")
-                || cfg!(target_os = "macos") && name.contains("darwin")
-        }))
+    let download_url = json["assets"]
+        .as_array()
+        .and_then(|assets| {
+            assets.iter().find(|a| {
+                let name = a["name"].as_str().unwrap_or("");
+                cfg!(target_os = "windows") && name.ends_with(".exe")
+                    || cfg!(target_os = "linux") && name.contains("linux")
+                    || cfg!(target_os = "macos") && name.contains("darwin")
+            })
+        })
         .and_then(|a| a["browser_download_url"].as_str());
 
     let download_url = match download_url {
@@ -449,7 +493,8 @@ pub fn self_update() -> anyhow::Result<()> {
     let exe_path = std::env::current_exe()?;
     let tmp_path = exe_path.with_extension("tmp");
 
-    let resp_bytes = client.get(download_url)
+    let resp_bytes = client
+        .get(download_url)
         .header("User-Agent", "crush-updater")
         .send()?
         .bytes()?;
@@ -461,10 +506,10 @@ pub fn self_update() -> anyhow::Result<()> {
         let bat_path = install_dir.join("crush.bat");
         let _ = std::fs::remove_file(&bat_path);
         let new_bat = install_dir.join("crush.bat");
-        std::fs::write(&new_bat, format!(
-            "@echo off\r\n\"{}\" %*\r\n",
-            exe_path.display()
-        ))?;
+        std::fs::write(
+            &new_bat,
+            format!("@echo off\r\n\"{}\" %*\r\n", exe_path.display()),
+        )?;
     }
 
     println!("\n  ✓ Downloaded successfully!");
@@ -517,11 +562,7 @@ pub fn uninstall() -> anyhow::Result<()> {
         }
     }
 
-    for target in [
-        crush_models_dir(),
-        crush_data_dir(),
-        crush_install_dir(),
-    ] {
+    for target in [crush_models_dir(), crush_data_dir(), crush_install_dir()] {
         if target.exists() {
             println!("  Deleting {} ...", target.display());
             if std::fs::remove_dir_all(&target).is_err() {
@@ -534,7 +575,11 @@ pub fn uninstall() -> anyhow::Result<()> {
         .unwrap_or_else(|| PathBuf::from("."))
         .join(".cargo")
         .join("bin")
-        .join(if cfg!(target_os = "windows") { "crush.exe" } else { "crush" });
+        .join(if cfg!(target_os = "windows") {
+            "crush.exe"
+        } else {
+            "crush"
+        });
     if cargo_crush.exists() {
         println!("  Deleting {} ...", cargo_crush.display());
         let _ = std::fs::remove_file(&cargo_crush);

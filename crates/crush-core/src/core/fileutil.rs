@@ -35,28 +35,45 @@ pub struct AnalyseStats {
 }
 
 const VIDEO_EXTS: &[&str] = &[
-    ".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".webm",
-    ".m4v", ".mpg", ".mpeg", ".3gp", ".ts",
+    ".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".webm", ".m4v", ".mpg", ".mpeg", ".3gp", ".ts",
 ];
 
 const IMAGE_EXTS: &[&str] = &[
-    ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff", ".tif",
-    ".avif", ".gif", ".svg", ".ico", ".heic", ".heif",
+    ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff", ".tif", ".avif", ".gif", ".svg", ".ico",
+    ".heic", ".heif",
 ];
 
 const AUDIO_EXTS: &[&str] = &[
-    ".mp3", ".wav", ".flac", ".ogg", ".aac", ".wma",
-    ".m4a", ".opus", ".aiff", ".alac",
+    ".mp3", ".wav", ".flac", ".ogg", ".aac", ".wma", ".m4a", ".opus", ".aiff", ".alac",
 ];
 
 const FORMAT_NAMES: &[(&str, &str)] = &[
-    (".jpg", "JPEG"), (".jpeg", "JPEG"), (".png", "PNG"), (".webp", "WebP"),
-    (".avif", "AVIF"), (".gif", "GIF"), (".bmp", "BMP"), (".svg", "SVG"),
-    (".ico", "ICO"), (".tiff", "TIFF"), (".heic", "HEIC"),
-    (".mp4", "MP4"), (".mov", "MOV"), (".avi", "AVI"), (".mkv", "MKV"),
-    (".wmv", "WMV"), (".flv", "FLV"), (".webm", "WebM"), (".m4v", "M4V"),
-    (".mp3", "MP3"), (".wav", "WAV"), (".flac", "FLAC"), (".ogg", "OGG"),
-    (".aac", "AAC"), (".m4a", "M4A"), (".opus", "Opus"),
+    (".jpg", "JPEG"),
+    (".jpeg", "JPEG"),
+    (".png", "PNG"),
+    (".webp", "WebP"),
+    (".avif", "AVIF"),
+    (".gif", "GIF"),
+    (".bmp", "BMP"),
+    (".svg", "SVG"),
+    (".ico", "ICO"),
+    (".tiff", "TIFF"),
+    (".heic", "HEIC"),
+    (".mp4", "MP4"),
+    (".mov", "MOV"),
+    (".avi", "AVI"),
+    (".mkv", "MKV"),
+    (".wmv", "WMV"),
+    (".flv", "FLV"),
+    (".webm", "WebM"),
+    (".m4v", "M4V"),
+    (".mp3", "MP3"),
+    (".wav", "WAV"),
+    (".flac", "FLAC"),
+    (".ogg", "OGG"),
+    (".aac", "AAC"),
+    (".m4a", "M4A"),
+    (".opus", "Opus"),
 ];
 
 pub fn detect_type(ext: &str) -> FileType {
@@ -105,14 +122,29 @@ pub fn file_name_without_ext(name: &str) -> &str {
 pub fn can_convert_to(file_type: FileType, format: &str) -> bool {
     let f = format.to_lowercase();
     match file_type {
-        FileType::Image => matches!(f.as_str(),
+        FileType::Image => matches!(
+            f.as_str(),
             "webp" | "avif" | "jpg" | "jpeg" | "png" | "gif" | "bmp" | "tiff"
         ),
-        FileType::Video => matches!(f.as_str(),
-            "mp4" | "webm" | "avi" | "mov" | "mkv" | "gif" |
-            "mp3" | "ogg" | "wav" | "flac" | "aac" | "opus" | "m4a" | "alac"
+        FileType::Video => matches!(
+            f.as_str(),
+            "mp4"
+                | "webm"
+                | "avi"
+                | "mov"
+                | "mkv"
+                | "gif"
+                | "mp3"
+                | "ogg"
+                | "wav"
+                | "flac"
+                | "aac"
+                | "opus"
+                | "m4a"
+                | "alac"
         ),
-        FileType::Audio => matches!(f.as_str(),
+        FileType::Audio => matches!(
+            f.as_str(),
             "mp3" | "ogg" | "wav" | "flac" | "aac" | "opus" | "m4a" | "alac"
         ),
         FileType::Unknown => false,
@@ -123,10 +155,12 @@ pub fn native_supports_format(input_ext: &str, target_ext: &str) -> bool {
     let inp = input_ext.to_lowercase();
     let tgt = target_ext.to_lowercase();
 
-    let supported_input = matches!(inp.as_str(),
+    let supported_input = matches!(
+        inp.as_str(),
         ".png" | ".jpg" | ".jpeg" | ".bmp" | ".tiff" | ".tif" | ".gif"
     );
-    let supported_output = matches!(tgt.as_str(),
+    let supported_output = matches!(
+        tgt.as_str(),
         "webp" | "avif" | "png" | "jpg" | "jpeg" | "bmp"
     );
 
@@ -188,9 +222,18 @@ pub fn scan_directory(dir: &Path) -> (Vec<FileInfo>, AnalyseStats) {
         *stats.formats.entry(ext.clone()).or_insert(0) += 1;
 
         match file_type {
-            FileType::Image => { stats.images += 1; stats.image_size += size; }
-            FileType::Video => { stats.videos += 1; stats.video_size += size; }
-            FileType::Audio => { stats.audio += 1; stats.audio_size += size; }
+            FileType::Image => {
+                stats.images += 1;
+                stats.image_size += size;
+            }
+            FileType::Video => {
+                stats.videos += 1;
+                stats.video_size += size;
+            }
+            FileType::Audio => {
+                stats.audio += 1;
+                stats.audio_size += size;
+            }
             _ => {}
         }
 
@@ -221,5 +264,9 @@ pub fn filter_by_type(files: &[FileInfo], filter: &str) -> Vec<FileInfo> {
         "audio" => FileType::Audio,
         _ => return files.to_vec(),
     };
-    files.iter().filter(|f| f.file_type == ft).cloned().collect()
+    files
+        .iter()
+        .filter(|f| f.file_type == ft)
+        .cloned()
+        .collect()
 }

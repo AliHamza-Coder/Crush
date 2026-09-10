@@ -2,7 +2,7 @@ pub mod app;
 pub mod ui;
 
 use crossterm::{
-    event::{self, Event, KeyCode, KeyEventKind, MouseEvent, MouseEventKind, MouseButton},
+    event::{self, Event, KeyCode, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -23,7 +23,11 @@ pub fn run() -> anyhow::Result<()> {
 
     enable_raw_mode()?;
     let mut stdout = std::io::stdout();
-    execute!(stdout, EnterAlternateScreen, crossterm::event::EnableMouseCapture)?;
+    execute!(
+        stdout,
+        EnterAlternateScreen,
+        crossterm::event::EnableMouseCapture
+    )?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
@@ -43,7 +47,10 @@ pub fn run() -> anyhow::Result<()> {
     result
 }
 
-fn run_app(terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>, app: &mut App) -> anyhow::Result<()> {
+fn run_app(
+    terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
+    app: &mut App,
+) -> anyhow::Result<()> {
     loop {
         terminal.draw(|f| ui::render(f, app))?;
 
@@ -127,15 +134,42 @@ fn handle_key(app: &mut App, code: KeyCode) -> anyhow::Result<()> {
             KeyCode::Char('h') | KeyCode::Char('H') => {
                 app.active_panel = Panel::Help;
             }
-            KeyCode::Char('1') => { app.menu_idx = 0; app.execute_menu_action()?; }
-            KeyCode::Char('2') => { app.menu_idx = 1; app.execute_menu_action()?; }
-            KeyCode::Char('3') => { app.menu_idx = 2; app.execute_menu_action()?; }
-            KeyCode::Char('4') => { app.menu_idx = 3; app.execute_menu_action()?; }
-            KeyCode::Char('5') => { app.menu_idx = 4; app.execute_menu_action()?; }
-            KeyCode::Char('6') => { app.menu_idx = 5; app.execute_menu_action()?; }
-            KeyCode::Char('7') => { app.menu_idx = 6; app.execute_menu_action()?; }
-            KeyCode::Char('8') => { app.menu_idx = 7; app.execute_menu_action()?; }
-            KeyCode::Char('9') => { app.menu_idx = 8; app.execute_menu_action()?; }
+            KeyCode::Char('1') => {
+                app.menu_idx = 0;
+                app.execute_menu_action()?;
+            }
+            KeyCode::Char('2') => {
+                app.menu_idx = 1;
+                app.execute_menu_action()?;
+            }
+            KeyCode::Char('3') => {
+                app.menu_idx = 2;
+                app.execute_menu_action()?;
+            }
+            KeyCode::Char('4') => {
+                app.menu_idx = 3;
+                app.execute_menu_action()?;
+            }
+            KeyCode::Char('5') => {
+                app.menu_idx = 4;
+                app.execute_menu_action()?;
+            }
+            KeyCode::Char('6') => {
+                app.menu_idx = 5;
+                app.execute_menu_action()?;
+            }
+            KeyCode::Char('7') => {
+                app.menu_idx = 6;
+                app.execute_menu_action()?;
+            }
+            KeyCode::Char('8') => {
+                app.menu_idx = 7;
+                app.execute_menu_action()?;
+            }
+            KeyCode::Char('9') => {
+                app.menu_idx = 8;
+                app.execute_menu_action()?;
+            }
             _ => {}
         },
         Panel::Files => match code {
@@ -173,7 +207,11 @@ fn handle_key(app: &mut App, code: KeyCode) -> anyhow::Result<()> {
             KeyCode::Char('l') | KeyCode::Char('L') => {
                 app.lossless = !app.lossless;
                 app.quality = if app.lossless { 0 } else { 85 };
-                app.status_msg = if app.lossless { "Lossless ON".into() } else { "Lossless OFF".into() };
+                app.status_msg = if app.lossless {
+                    "Lossless ON".into()
+                } else {
+                    "Lossless OFF".into()
+                };
             }
             KeyCode::Char(c) if c.is_ascii_digit() => {
                 app.input_mode = true;
@@ -225,7 +263,11 @@ fn handle_key(app: &mut App, code: KeyCode) -> anyhow::Result<()> {
             KeyCode::Char('l') | KeyCode::Char('L') => {
                 app.lossless = !app.lossless;
                 app.quality = if app.lossless { 0 } else { 85 };
-                app.status_msg = if app.lossless { "Lossless ON".into() } else { "Lossless OFF".into() };
+                app.status_msg = if app.lossless {
+                    "Lossless ON".into()
+                } else {
+                    "Lossless OFF".into()
+                };
             }
             _ => {}
         },
@@ -235,10 +277,18 @@ fn handle_key(app: &mut App, code: KeyCode) -> anyhow::Result<()> {
                 app.submenu_flow = app::SubmenuFlow::None;
             }
             KeyCode::Up | KeyCode::Char('k') => {
-                app.submenu_idx = if app.submenu_idx > 0 { app.submenu_idx - 1 } else { app.submenu_items.len() - 1 };
+                app.submenu_idx = if app.submenu_idx > 0 {
+                    app.submenu_idx - 1
+                } else {
+                    app.submenu_items.len() - 1
+                };
             }
             KeyCode::Down | KeyCode::Char('j') => {
-                app.submenu_idx = if app.submenu_idx < app.submenu_items.len() - 1 { app.submenu_idx + 1 } else { 0 };
+                app.submenu_idx = if app.submenu_idx < app.submenu_items.len() - 1 {
+                    app.submenu_idx + 1
+                } else {
+                    0
+                };
             }
             KeyCode::Enter => {
                 app.confirm_backup();
@@ -341,44 +391,48 @@ fn handle_mouse(app: &mut App, mouse: MouseEvent) {
                 }
             }
         }
-        MouseEventKind::ScrollUp => {
-            match app.active_panel {
-                Panel::Menu => app.prev_menu(),
-                Panel::Files => app.prev_file(),
-                Panel::Quality => app.prev_quality(),
-                Panel::Format => app.prev_format(),
-                Panel::QualitySubmenu => {
-                    if app.submenu_idx > 0 {
-                        app.submenu_idx -= 1;
-                    } else {
-                        app.submenu_idx = app.submenu_items.len() - 1;
-                    }
+        MouseEventKind::ScrollUp => match app.active_panel {
+            Panel::Menu => app.prev_menu(),
+            Panel::Files => app.prev_file(),
+            Panel::Quality => app.prev_quality(),
+            Panel::Format => app.prev_format(),
+            Panel::QualitySubmenu => {
+                if app.submenu_idx > 0 {
+                    app.submenu_idx -= 1;
+                } else {
+                    app.submenu_idx = app.submenu_items.len() - 1;
                 }
-                Panel::BackupConfirm => {
-                    app.submenu_idx = if app.submenu_idx > 0 { app.submenu_idx - 1 } else { app.submenu_items.len() - 1 };
-                }
-                _ => {}
             }
-        }
-        MouseEventKind::ScrollDown => {
-            match app.active_panel {
-                Panel::Menu => app.next_menu(),
-                Panel::Files => app.next_file(),
-                Panel::Quality => app.next_quality(),
-                Panel::Format => app.next_format(),
-                Panel::QualitySubmenu => {
-                    if app.submenu_idx < app.submenu_items.len() - 1 {
-                        app.submenu_idx += 1;
-                    } else {
-                        app.submenu_idx = 0;
-                    }
-                }
-                Panel::BackupConfirm => {
-                    app.submenu_idx = if app.submenu_idx < app.submenu_items.len() - 1 { app.submenu_idx + 1 } else { 0 };
-                }
-                _ => {}
+            Panel::BackupConfirm => {
+                app.submenu_idx = if app.submenu_idx > 0 {
+                    app.submenu_idx - 1
+                } else {
+                    app.submenu_items.len() - 1
+                };
             }
-        }
+            _ => {}
+        },
+        MouseEventKind::ScrollDown => match app.active_panel {
+            Panel::Menu => app.next_menu(),
+            Panel::Files => app.next_file(),
+            Panel::Quality => app.next_quality(),
+            Panel::Format => app.next_format(),
+            Panel::QualitySubmenu => {
+                if app.submenu_idx < app.submenu_items.len() - 1 {
+                    app.submenu_idx += 1;
+                } else {
+                    app.submenu_idx = 0;
+                }
+            }
+            Panel::BackupConfirm => {
+                app.submenu_idx = if app.submenu_idx < app.submenu_items.len() - 1 {
+                    app.submenu_idx + 1
+                } else {
+                    0
+                };
+            }
+            _ => {}
+        },
         _ => {}
     }
 }
