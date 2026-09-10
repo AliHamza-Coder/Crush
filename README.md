@@ -11,14 +11,12 @@ irm https://raw.githubusercontent.com/AliHamza-Coder/Crush/main/scripts/install.
 
 ### Linux / macOS
 ```bash
-git clone https://github.com/AliHamza-Coder/Crush.git && cd Crush && cargo install --path crates/crush-cli
+curl -fsSL https://raw.githubusercontent.com/AliHamza-Coder/Crush/main/scripts/install.sh | bash
 ```
 
-### From Source (Any OS)
+### From Source
 ```bash
-git clone https://github.com/AliHamza-Coder/Crush.git
-cd Crush
-cargo build --release
+git clone https://github.com/AliHamza-Coder/Crush.git && cd Crush && cargo install --path crates/crush-cli
 ```
 
 ## Usage
