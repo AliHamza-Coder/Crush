@@ -50,7 +50,7 @@ jobs:
         with:
           name: windows
           path: |
-            crush-setup.exe
+            installer/windows/crush-setup.exe
             crush-*.zip
 
   build-linux:
