@@ -47,7 +47,7 @@ def read_rust_version(path):
 
 
 def read_toml_version(path):
-    """Extract version from Cargo.toml: version = "...""""
+    """Extract version from Cargo.toml: version = "..."""
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
             match = re.match(r'^version\s*=\s*"([^"]+)"', line.strip())
