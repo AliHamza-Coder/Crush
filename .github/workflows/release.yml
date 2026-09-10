@@ -1,8 +1,6 @@
 name: Release
 
 # Triggers ONLY on tag push (created by version-gate.yml) or manual dispatch.
-# Never add `push: branches: [main]` here — see references/common-patterns.md rule 4.
-
 on:
   push:
     tags:
@@ -17,7 +15,7 @@ permissions:
   contents: write
 
 jobs:
-  # ── Build + test on each platform ──
+  # ── Build on each platform ──
   build:
     strategy:
       fail-fast: false
@@ -25,10 +23,10 @@ jobs:
         include:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            archive: crush-windows-x64.zip
+            artifact: crush-windows-x64
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            archive: crush-linux-x64.tar.gz
+            artifact: crush-linux-x64
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -46,7 +44,6 @@ jobs:
         with:
           workspaces: './crates/crush-cli -> target'
 
-      # See references/common-patterns.md rule 7 — lint and test before build.
       - name: Lint and test
         run: |
           cargo fmt --all -- --check
@@ -56,26 +53,82 @@ jobs:
       - name: Build release binary
         run: cargo build --release --workspace
 
-      # ── Windows packaging ──
-      - name: Package Windows binary
+      # ── Windows: create zip with exe + README ──
+      - name: Package Windows
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          Compress-Archive -Path "target/release/crush.exe" -DestinationPath ${{ matrix.archive }}
+          $version = "${GITHUB_REF_NAME#v}"
+          $dir = "crush-$version-windows-x64"
+          New-Item -ItemType Directory -Path $dir -Force
+          Copy-Item "target/release/crush.exe" "$dir/"
+          Copy-Item "README.md" "$dir/"
+          Copy-Item "LICENSE" "$dir/" -ErrorAction SilentlyContinue
+          @"
+          # CRUSH v$version
 
-      # ── Linux packaging ──
-      - name: Package Linux binary
+          ## Install
+          1. Extract this folder
+          2. Add to PATH or run `crush.exe` directly
+
+          ## Usage
+          ``````
+          crush analyse .
+          crush -i ./images -f webp -q 85
+          crush -i ./videos -f mp4
+          ``````
+          "@ | Set-Content "$dir/INSTALL.txt"
+          Compress-Archive -Path $dir -DestinationPath "$dir.zip"
+          echo "ZIP=$dir.zip" >> $env:GITHUB_ENV
+
+      # ── Linux: create tar.gz + deb ──
+      - name: Package Linux
         if: matrix.os == 'ubuntu-latest'
-        run: tar -czf ${{ matrix.archive }} -C target/release crush
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          DIR="crush-${VERSION}-linux-x64"
+          mkdir -p "$DIR"
+          cp target/release/crush "$DIR/"
+          cp README.md "$DIR/"
+          cp LICENSE "$DIR/" 2>/dev/null || true
+          cat > "$DIR/INSTALL.txt" << 'INSTALL'
+          # CRUSH - Install
+
+          ## Quick install
+          sudo cp crush /usr/local/bin/
+
+          ## Or run directly
+          ./crush analyse .
+          INSTALL
+          tar -czf "$DIR.tar.gz" "$DIR"
+          echo "TARBALL=$DIR.tar.gz" >> "$GITHUB_ENV"
+
+          # Build .deb package
+          DEB_DIR="crush_${VERSION}_amd64"
+          mkdir -p "$DEB_DIR/DEBIAN"
+          mkdir -p "$DEB_DIR/usr/local/bin"
+          cp target/release/crush "$DEB_DIR/usr/local/bin/"
+          cat > "$DEB_DIR/DEBIAN/control" << EOF
+          Package: crush
+          Version: $VERSION
+          Architecture: amd64
+          Description: CRUSH - Multimedia Mission Control
+          A fast image, video, and audio compressor/convertor written in Rust.
+          EOF
+          dpkg-deb --build "$DEB_DIR" "crush_${VERSION}_amd64.deb"
+          echo "DEB=crush_${VERSION}_amd64.deb" >> "$GITHUB_ENV"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.archive }}
-          path: ${{ matrix.archive }}
+          name: ${{ matrix.artifact }}
+          path: |
+            ${{ env.ZIP }}
+            ${{ env.TARBALL }}
+            ${{ env.DEB }}
           retention-days: 1
 
-  # ── Create release after all builds succeed ──
+  # ── Create release ──
   publish:
     needs: build
     runs-on: ubuntu-latest
@@ -88,7 +141,6 @@ jobs:
         with:
           python-version: '3.x'
 
-      # See references/common-patterns.md rules 1 and 9.
       - name: Parse release checklist
         id: checklist
         run: |
